@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================
+// 認証・ユーザー管理
+// ============================================================
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String?
+  hashedPassword String
+  role           String    @default("viewer") // admin, editor, viewer
+  department     String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  sessions       Session[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// 成分マスターデータ
+// ============================================================
+
+model Ingredient {
+  id                  String   @id @default(uuid())
+  inciName            String   // INCI名（国際命名法）
+  japaneseNameKanji   String   // 日本語名（漢字）
+  japaneseNameKana    String?  // 日本語名（カナ）
+  casNumber           String?  // CAS番号
+  ecNumber            String?  // EC番号
+
+  // 分類
+  category            String   // 化粧品 / 健康食品 / 両方
+  subcategory         String   // 保湿剤, 防腐剤, 界面活性剤, UV吸収剤, etc.
+
+  // 機能・効果
+  primaryFunction     String   // 主な機能
+  secondaryFunctions  String?  // 副次的機能（カンマ区切り）
+  description         String?  // 説明
+
+  // 安全性
+  safetyRating        String?  // A(非常に安全)〜E(注意必要)
+  ewgScore            String?  // EWG スコア (1-10)
+  allergenRisk        String?  // 低/中/高
+  irritationRisk      String?  // 低/中/高
+
+  // 規制情報
+  regulatoryStatus    String?  // 承認済み / 制限あり / 禁止
+  maxConcentration    String?  // 最大配合濃度(%)
+  jciaListed          Boolean  @default(false) // JCIA表示名称リスト掲載
+  quasiDrugApproved   Boolean  @default(false) // 医薬部外品有効成分
+
+  // 使用情報
+  typicalConcentration String? // 一般的な配合濃度
+  compatibleWith      String?  // 相性の良い成分
+  incompatibleWith    String?  // 相性の悪い成分
+
+  // 販促情報
+  marketingClaims     String?  // マーケティング用途
+  trendScore          Int?     // トレンドスコア (1-10)
+  targetDemographic   String?  // ターゲット層
+
+  // メタデータ
+  source              String?  // データソース
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  products            ProductIngredient[]
+
+  @@index([inciName])
+  @@index([japaneseNameKanji])
+  @@index([category])
+  @@index([subcategory])
+}
+
+// ============================================================
+// 製品データ
+// ============================================================
+
+model Product {
+  id              String   @id @default(uuid())
+  name            String
+  brand           String?
+  category        String   // スキンケア, ヘアケア, サプリメント, etc.
+  subcategory     String?
+  description     String?
+  targetAudience  String?
+  price           Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ingredients     ProductIngredient[]
+}
+
+model ProductIngredient {
+  id            String     @id @default(uuid())
+  productId     String
+  ingredientId  String
+  orderIndex    Int        // 配合順序（配合量の多い順）
+  concentration String?    // 配合濃度
+
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, ingredientId])
+}
+
+// ============================================================
+// Excelインポートログ
+// ============================================================
+
+model ImportLog {
+  id            String   @id @default(uuid())
+  fileName      String
+  fileSize      Int
+  status        String   // success, error, partial
+  rowsProcessed Int      @default(0)
+  rowsSucceeded Int      @default(0)
+  rowsFailed    Int      @default(0)
+  errorDetails  String?
+  importedBy    String?
+  createdAt     DateTime @default(now())
+}
