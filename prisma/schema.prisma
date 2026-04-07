@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 認証・ユーザー管理
+// ============================================================
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String?
+  hashedPassword String
+  role           String    @default("viewer") // admin, editor, viewer
+  department     String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  sessions       Session[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// 成分マスターデータ（Excel テンプレート準拠）
+// ============================================================
+
+model Ingredient {
+  id        String @id @default(uuid())
+
+  // 基本情報
+  domain    String   // cosmetics / healthfood / both
+  name      String   // 日本語代表名（基準名）
+  inci      String?  // INCI名
+  english   String?  // 英語一般名
+  nameEn    String?  // 英語表示用名称
+  nameZh    String?  // 中国語表示用名称
+  aliases   String?  // 別名・略称・表記ゆれ（「、」区切り）
+
+  // 分類・役割
+  tags      String?  // 機能タグ（「、」区切り）
+  role      String?  // 主役 / 補助 / 基盤
+  short     String?  // 短い説明文
+  detail    String?  // 詳しい説明文
+  merits    String?  // メリット（「、」区切り）
+  cautions  String?  // 注意点（「、」区切り）
+
+  // 化粧品スコア (0-40)
+  moisture    Int @default(0) // 保湿
+  barrier     Int @default(0) // バリア
+  brightening Int @default(0) // 透明感
+  firmness    Int @default(0) // ハリ
+  soothing    Int @default(0) // 整肌
+
+  // 健康食品スコア (0-40)
+  beauty      Int @default(0) // 美容
+  rest        Int @default(0) // 休息
+  gut         Int @default(0) // 腸活
+  vitality    Int @default(0) // 活力
+  circulation Int @default(0) // 巡り
+
+  // メタデータ
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productIngredients ProductIngredient[]
+
+  @@index([name])
+  @@index([inci])
+  @@index([domain])
+}
+
+// ============================================================
+// 製品データ
+// ============================================================
+
+model Product {
+  id              String  @id @default(uuid())
+  domain          String  // cosmetics / healthfood
+  subcategory     String? // 美容液, ドリンク, etc.
+  name            String
+  brand           String?
+  ingredientsText String? // 全成分テキスト（「、」区切り）
+  adText          String? // 販促テキスト
+  adUrl           String? // 広告URL
+  overallImage    String? // 製品画像パス
+  ingredientImage String? // 成分表画像パス
+
+  // モンゴル関連
+  mongoliaIngredients String? // モンゴル由来成分
+  storyBadge          String? // ストーリーバッジ
+  storyText           String? // ストーリーテキスト
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ingredients ProductIngredient[]
+
+  @@index([domain])
+}
+
+model ProductIngredient {
+  id           String     @id @default(uuid())
+  productId    String
+  ingredientId String
+  orderIndex   Int
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, ingredientId])
+}
+
+// ============================================================
+// OCR補正辞書
+// ============================================================
+
+model OcrCorrection {
+  id      String @id @default(uuid())
+  wrong   String @unique // OCR誤読み
+  correct String         // 正しい表記
+}
+
+// ============================================================
+// Excelインポートログ
+// ============================================================
+
+model ImportLog {
+  id            String   @id @default(uuid())
+  fileName      String
+  fileType      String   // ingredients / products / ocr
+  status        String   // success / error / partial
+  rowsProcessed Int      @default(0)
+  rowsSucceeded Int      @default(0)
+  rowsFailed    Int      @default(0)
+  errorDetails  String?
+  importedBy    String?
+  createdAt     DateTime @default(now())
+}
