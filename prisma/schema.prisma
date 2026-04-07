@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -33,59 +33,52 @@ model Session {
 }
 
 // ============================================================
-// 成分マスターデータ
+// 成分マスターデータ（Excel テンプレート準拠）
 // ============================================================
 
 model Ingredient {
-  id                  String   @id @default(uuid())
-  inciName            String   // INCI名（国際命名法）
-  japaneseNameKanji   String   // 日本語名（漢字）
-  japaneseNameKana    String?  // 日本語名（カナ）
-  casNumber           String?  // CAS番号
-  ecNumber            String?  // EC番号
+  id        String @id @default(uuid())
 
-  // 分類
-  category            String   // 化粧品 / 健康食品 / 両方
-  subcategory         String   // 保湿剤, 防腐剤, 界面活性剤, UV吸収剤, etc.
+  // 基本情報
+  domain    String   // cosmetics / healthfood / both
+  name      String   // 日本語代表名（基準名）
+  inci      String?  // INCI名
+  english   String?  // 英語一般名
+  nameEn    String?  // 英語表示用名称
+  nameZh    String?  // 中国語表示用名称
+  aliases   String?  // 別名・略称・表記ゆれ（「、」区切り）
 
-  // 機能・効果
-  primaryFunction     String   // 主な機能
-  secondaryFunctions  String?  // 副次的機能（カンマ区切り）
-  description         String?  // 説明
+  // 分類・役割
+  tags      String?  // 機能タグ（「、」区切り）
+  role      String?  // 主役 / 補助 / 基盤
+  short     String?  // 短い説明文
+  detail    String?  // 詳しい説明文
+  merits    String?  // メリット（「、」区切り）
+  cautions  String?  // 注意点（「、」区切り）
 
-  // 安全性
-  safetyRating        String?  // A(非常に安全)〜E(注意必要)
-  ewgScore            String?  // EWG スコア (1-10)
-  allergenRisk        String?  // 低/中/高
-  irritationRisk      String?  // 低/中/高
+  // 化粧品スコア (0-40)
+  moisture    Int @default(0) // 保湿
+  barrier     Int @default(0) // バリア
+  brightening Int @default(0) // 透明感
+  firmness    Int @default(0) // ハリ
+  soothing    Int @default(0) // 整肌
 
-  // 規制情報
-  regulatoryStatus    String?  // 承認済み / 制限あり / 禁止
-  maxConcentration    String?  // 最大配合濃度(%)
-  jciaListed          Boolean  @default(false) // JCIA表示名称リスト掲載
-  quasiDrugApproved   Boolean  @default(false) // 医薬部外品有効成分
-
-  // 使用情報
-  typicalConcentration String? // 一般的な配合濃度
-  compatibleWith      String?  // 相性の良い成分
-  incompatibleWith    String?  // 相性の悪い成分
-
-  // 販促情報
-  marketingClaims     String?  // マーケティング用途
-  trendScore          Int?     // トレンドスコア (1-10)
-  targetDemographic   String?  // ターゲット層
+  // 健康食品スコア (0-40)
+  beauty      Int @default(0) // 美容
+  rest        Int @default(0) // 休息
+  gut         Int @default(0) // 腸活
+  vitality    Int @default(0) // 活力
+  circulation Int @default(0) // 巡り
 
   // メタデータ
-  source              String?  // データソース
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  products            ProductIngredient[]
+  productIngredients ProductIngredient[]
 
-  @@index([inciName])
-  @@index([japaneseNameKanji])
-  @@index([category])
-  @@index([subcategory])
+  @@index([name])
+  @@index([inci])
+  @@index([domain])
 }
 
 // ============================================================
@@ -93,31 +86,50 @@ model Ingredient {
 // ============================================================
 
 model Product {
-  id              String   @id @default(uuid())
+  id              String  @id @default(uuid())
+  domain          String  // cosmetics / healthfood
+  subcategory     String? // 美容液, ドリンク, etc.
   name            String
   brand           String?
-  category        String   // スキンケア, ヘアケア, サプリメント, etc.
-  subcategory     String?
-  description     String?
-  targetAudience  String?
-  price           Float?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  ingredientsText String? // 全成分テキスト（「、」区切り）
+  adText          String? // 販促テキスト
+  adUrl           String? // 広告URL
+  overallImage    String? // 製品画像パス
+  ingredientImage String? // 成分表画像パス
 
-  ingredients     ProductIngredient[]
+  // モンゴル関連
+  mongoliaIngredients String? // モンゴル由来成分
+  storyBadge          String? // ストーリーバッジ
+  storyText           String? // ストーリーテキスト
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ingredients ProductIngredient[]
+
+  @@index([domain])
 }
 
 model ProductIngredient {
-  id            String     @id @default(uuid())
-  productId     String
-  ingredientId  String
-  orderIndex    Int        // 配合順序（配合量の多い順）
-  concentration String?    // 配合濃度
+  id           String     @id @default(uuid())
+  productId    String
+  ingredientId String
+  orderIndex   Int
 
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  ingredient    Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
 
   @@unique([productId, ingredientId])
+}
+
+// ============================================================
+// OCR補正辞書
+// ============================================================
+
+model OcrCorrection {
+  id      String @id @default(uuid())
+  wrong   String @unique // OCR誤読み
+  correct String         // 正しい表記
 }
 
 // ============================================================
@@ -127,8 +139,8 @@ model ProductIngredient {
 model ImportLog {
   id            String   @id @default(uuid())
   fileName      String
-  fileSize      Int
-  status        String   // success, error, partial
+  fileType      String   // ingredients / products / ocr
+  status        String   // success / error / partial
   rowsProcessed Int      @default(0)
   rowsSucceeded Int      @default(0)
   rowsFailed    Int      @default(0)

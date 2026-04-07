@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beauty & Health Demo v16</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--line:#d9e0ea;--text:#1f2937;--muted:#6b7280;--primary:#2563eb;--good:#16a34a;--warn:#d97706;--bad:#dc2626;--story:#7c3aed;--mongolia:#b45309;--shadow:0 8px 24px rgba(0,0,0,.08);--radius:16px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;padding:24px 320px 24px 24px;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:1360px;margin:auto}
+h1{margin:0 0 8px}
+h2{margin:0 0 12px;font-size:22px}
+h3{margin:0 0 10px;font-size:18px}
+.card{background:var(--card);padding:20px;border-radius:var(--radius);margin-top:16px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.lead,.mini-note{color:var(--muted);line-height:1.7}
+.mini-note{font-size:12px}
+.page-title-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+.lang-switch{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.nav,.subtabs{display:flex;gap:10px;flex-wrap:wrap}
+.nav{margin-top:16px;position:sticky;top:0;background:rgba(245,247,251,.96);padding:10px 0;backdrop-filter:blur(8px);z-index:20}
+button,.nav-btn,.subtab-btn,.lang-btn{padding:12px 16px;min-height:46px;border-radius:12px;border:1px solid #c7d2fe;background:#eef2ff;color:#1d4ed8;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;white-space:nowrap}
+button.primary,.nav-btn.active,.subtab-btn.active,.lang-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+button{margin-top:14px}
+.inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ghost-btn{background:#fff;color:#1d4ed8}
+.danger{background:#b91c1c!important;border-color:#b91c1c!important;color:#fff!important}
+label{display:block;font-weight:700;margin-top:8px}
+select,textarea,input[type=text],input[type=url],input[type=file],input[type=password]{width:100%;padding:12px;border-radius:10px;border:1px solid #cfd7e3;margin-top:8px;font-size:14px;background:#fff}
+textarea{min-height:120px;resize:vertical;line-height:1.7}
+.page{display:none}.page.active{display:block}
+.result{background:#f8fbff;padding:16px;border-radius:12px;border:1px solid #dbeafe;margin-top:12px;line-height:1.8}
+.pill-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.pill{border:1px solid #c7d2fe;background:#eef2ff;color:#1d4ed8;border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:700;font-size:14px;user-select:none}
+.pill.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.tag{display:inline-block;background:#eef2ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;margin:4px 6px 0 0;font-size:12px;font-weight:700;border:1px solid #c7d2fe}
+.tag.good{background:#ecfdf5;color:#166534;border-color:#a7f3d0}
+.tag.story{background:#f5f3ff;color:#6d28d9;border-color:#c4b5fd}
+.tag.mongolia{background:#fffbeb;color:#b45309;border-color:#f59e0b}
+.question-row{display:grid;grid-template-columns:180px 1fr 42px;gap:12px;align-items:center;margin-top:12px}
+.question-row input[type=range]{width:100%}
+.range-value{text-align:center;font-weight:800;color:var(--primary)}
+.preview-wrap,.compare-columns,.image-grid,.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.preview-box,.compare-panel{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.preview-image,.preview-canvas,.detail-image{width:100%;border-radius:10px;border:1px solid var(--line);background:#fff;display:none}
+.detail-image{display:block}
+.product{position:relative;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;background:#fff;overflow:hidden;cursor:pointer}
+.product-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.product-stamp{display:inline-flex;align-items:center;justify-content:center;min-width:120px;min-height:72px;padding:10px 12px;border:3px solid currentColor;border-radius:14px;font-size:18px;font-weight:900;letter-spacing:.04em;transform:rotate(8deg);text-align:center;background:rgba(255,255,255,.92)}
+.stamp-mongolia{color:#b45309;background:#fffbeb;border-color:#f59e0b}
+.stamp-story{color:#6d28d9;background:#f5f3ff;border-color:#a78bfa}
+.stamp-custom{color:#be123c;background:#fff1f2;border-color:#fb7185}
+.scorebar{margin-top:12px}
+.scorebar-head{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:4px}
+.scorebar-outer{height:14px;border-radius:999px;background:#e5e7eb;overflow:hidden}
+.scorebar-inner{height:100%;background:var(--primary)}
+#cropStage{position:relative;display:inline-block;width:100%;cursor:crosshair}
+#ingredientPreview{pointer-events:none}
+#cropBox{display:none;position:absolute;border:2px solid #2563eb;background:rgba(37,99,235,.12);pointer-events:none}
+.status-line{font-size:13px;color:var(--muted);white-space:pre-wrap;margin-top:8px}
+.story-strip{margin-top:14px;padding:12px 14px;border:1px solid #fde68a;background:#fffbeb;border-radius:12px;color:#92400e;font-weight:700}
+.side-ad{position:fixed;right:16px;top:88px;width:280px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;z-index:10}
+.side-ad h3{margin:0 0 10px;font-size:20px;line-height:1.5}
+.side-ad p{margin:0;color:var(--muted);line-height:1.8}
+.side-ad .ad-badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;font-size:12px;font-weight:700;margin-bottom:10px}
+.top-fab{position:fixed;right:12px;bottom:12px;z-index:30;border:0;border-radius:999px;background:var(--primary);color:#fff;min-width:52px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:24px;z-index:9999}
+.modal.active{display:flex}
+.modal-content{background:#fff;width:min(980px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.hidden{display:none!important}
+@media (max-width:1300px){body{padding-right:24px}.side-ad{position:relative;right:auto;top:auto;width:auto;margin:16px 0 0 0}}
+@media (max-width:1020px){.grid-2,.grid-3,.preview-wrap,.compare-columns,.image-grid,.page-title-row,.admin-grid{grid-template-columns:1fr}.question-row{grid-template-columns:1fr}.modal{padding:12px}}
+</style>
+</head>
+<body>
+<button class="top-fab" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<aside class="side-ad">
+  <div class="ad-badge" data-i18n="adBadge">広告</div>
+  <h3 data-i18n="adHeadline"></h3>
+  <p data-i18n="adBody"></p>
+  <button class="primary" onclick="showPage('mongolia')" data-i18n="adButton"></button>
+</aside>
+
+<div class="container">
+  <div class="page-title-row">
+    <div>
+      <h1 id="pageTitle" data-i18n="pageTitle"></h1>
+      <p class="lead" data-i18n="pageLead"></p>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn active" id="langJa" onclick="switchLang('ja')">日本語</button>
+      <button class="lang-btn" id="langEn" onclick="switchLang('en')">English</button>
+      <button class="lang-btn" id="langZh" onclick="switchLang('zh')">中文</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" data-page="builder" onclick="showPage('builder')" data-i18n="navBuilder"></button>
+    <button class="nav-btn" data-page="catalog" onclick="showPage('catalog')" data-i18n="navCatalog"></button>
+    <button class="nav-btn" data-page="ingredients" onclick="showPage('ingredients')" data-i18n="navIngredients"></button>
+    <button class="nav-btn" data-page="ranking" onclick="showPage('ranking')" data-i18n="navRanking"></button>
+    <button class="nav-btn" data-page="mongolia" onclick="showPage('mongolia')" data-i18n="navMongolia"></button>
+  </div>
+
+  <section id="builder" class="page active">
+    <div class="card">
+      <h2 data-i18n="section1"></h2>
+      <div class="grid-3">
+        <div><label data-i18n="domain"></label><select id="domainSelect"></select></div>
+        <div><label data-i18n="subcategory"></label><select id="subcategorySelect"></select></div>
+        <div><label data-i18n="usage"></label><select id="usageTimeSelect"></select></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="section2"></h2>
+      <div class="grid-2">
+        <div>
+          <div id="questionArea"></div>
+          <div class="inline-actions">
+            <button class="primary" onclick="diagnoseFromQuestions()" data-i18n="diagnose"></button>
+            <button onclick="shareDiagnosis()" data-i18n="shareDiagnosis"></button>
+          </div>
+        </div>
+        <div>
+          <div id="diagnosisResult" class="result"></div>
+          <div class="preview-box" style="margin-top:12px"><canvas id="radarCanvas" width="360" height="360" style="width:100%;max-width:360px;display:block;margin:auto"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="section3"></h2>
+      <div class="grid-2">
+        <div><label data-i18n="texture"></label><select id="textureSelect"></select></div>
+        <div><label data-i18n="philosophy"></label><select id="philosophySelect"></select></div>
+      </div>
+      <div style="margin-top:12px"><b data-i18n="avoid"></b></div>
+      <div id="avoidPills" class="pill-grid"></div>
+      <div class="inline-actions">
+        <button class="primary" onclick="buildIdealFormula()" data-i18n="build"></button>
+        <button onclick="resetBuilder()" data-i18n="reset"></button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2 data-i18n="section4"></h2>
+        <div id="recommendedIngredients"></div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="section5"></h2>
+        <div id="formulaSummary"></div>
+        <div id="barGraphArea"></div>
+        <div class="inline-actions">
+          <button class="primary" onclick="saveFormulaToRanking()" data-i18n="saveRanking"></button>
+          <button onclick="shareCurrentFormula()" data-i18n="share"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="section6"></h2>
+      <div id="idealCompareBox"></div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="section7"></h2>
+      <div class="grid-2">
+        <div>
+          <label data-i18n="productName"></label><input id="uploadProductName" type="text">
+          <label data-i18n="brand"></label><input id="uploadBrandName" type="text">
+          <label data-i18n="overallImage"></label><input id="overallImageInput" type="file" accept="image/*">
+          <label data-i18n="ingredientImage"></label><input id="ingredientImageInput" type="file" accept="image/*">
+          <div class="inline-actions">
+            <button onclick="resetCropSelection()" data-i18n="selectRangeReset"></button>
+            <button onclick="selectWholeImage()" data-i18n="selectWholeImage"></button>
+          </div>
+          <label data-i18n="ocrManual"></label><textarea id="ocrManualInput"></textarea>
+          <div id="ocrStatus" class="status-line"></div>
+          <div class="inline-actions">
+            <button class="primary" onclick="analyzeUploadedIngredients()" data-i18n="analyze"></button>
+            <button onclick="saveUploadedProduct()" data-i18n="saveUploaded"></button>
+          </div>
+        </div>
+        <div>
+          <div class="preview-wrap">
+            <div class="preview-box"><h4 data-i18n="previewOverall"></h4><img id="overallPreview" class="preview-image" alt=""></div>
+            <div class="preview-box"><h4 data-i18n="previewIngredient"></h4><div id="cropStage"><img id="ingredientPreview" class="preview-image" alt=""><div id="cropBox"></div></div></div>
+          </div>
+          <div class="preview-wrap" style="margin-top:12px">
+            <div class="preview-box"><h4 data-i18n="ocrProcessed"></h4><canvas id="processedCanvas" class="preview-canvas" width="320" height="320"></canvas></div>
+            <div class="preview-box"><h4 data-i18n="ocrResult"></h4><div id="ocrResultBox" class="result"></div></div>
+          </div>
+        </div>
+      </div>
+      <div id="uploadedCompareBox"></div>
+    </div>
+  </section>
+
+  <section id="catalog" class="page">
+    <div class="card">
+      <h2 data-i18n="catalogTitle"></h2>
+      <div class="grid-3">
+        <div><label data-i18n="domain"></label><select id="catalogDomainFilter"></select></div>
+        <div><label data-i18n="subcategory"></label><select id="catalogSubcategoryFilter"></select></div>
+        <div><label data-i18n="sort"></label><select id="catalogSort"></select></div>
+      </div>
+      <div class="grid-2">
+        <div><label data-i18n="period"></label><select id="catalogPeriod"></select></div>
+        <div><label data-i18n="badgeFilter"></label><select id="catalogBadgeFilter"></select></div>
+      </div>
+      <div id="catalogList"></div>
+    </div>
+  </section>
+
+  <section id="ingredients" class="page">
+    <div class="card">
+      <h2 data-i18n="ingredientsTitle"></h2>
+      <div class="grid-3">
+        <div><label data-i18n="domain"></label><select id="ingredientDomainFilter"></select></div>
+        <div><label data-i18n="sort"></label><select id="ingredientSort"></select></div>
+        <div><label data-i18n="period"></label><select id="ingredientPeriod"></select></div>
+      </div>
+      <div id="ingredientList"></div>
+    </div>
+  </section>
+
+  <section id="ranking" class="page">
+    <div class="card">
+      <h2 data-i18n="rankingTitle"></h2>
+      <div class="subtabs">
+        <button class="subtab-btn active" data-ranktab="formula" onclick="switchRankingTab('formula')" data-i18n="tabFormula"></button>
+        <button class="subtab-btn" data-ranktab="product" onclick="switchRankingTab('product')" data-i18n="tabProduct"></button>
+        <button class="subtab-btn" data-ranktab="ingredient" onclick="switchRankingTab('ingredient')" data-i18n="tabIngredient"></button>
+      </div>
+      <div class="grid-3">
+        <div><label data-i18n="domain"></label><select id="rankingDomainFilter"></select></div>
+        <div><label data-i18n="sort"></label><select id="rankingSort"></select></div>
+        <div><label data-i18n="period"></label><select id="rankingPeriod"></select></div>
+      </div>
+      <div id="rankingList"></div>
+    </div>
+  </section>
+
+  <section id="mongolia" class="page">
+    <div class="card">
+      <h2 data-i18n="mongoliaTitle"></h2>
+      <div class="result" data-i18n="mongoliaIntro"></div>
+      <div id="mongoliaFeatureList"></div>
+    </div>
+  </section>
+
+  <section id="admin" class="page">
+    <div class="card">
+      <h2 data-i18n="adminTitle"></h2>
+      <div id="adminLoginBox">
+        <label data-i18n="adminPassword"></label>
+        <input id="adminPassword" type="password">
+        <div class="inline-actions">
+          <button class="primary" onclick="unlockAdmin()" data-i18n="login"></button>
+          <button onclick="resetAllData()" data-i18n="resetData"></button>
+        </div>
+        <div class="mini-note">admin123</div>
+      </div>
+      <div id="adminBody" class="hidden">
+        <div class="admin-grid">
+          <div class="card" style="margin-top:0"><h3 data-i18n="productsExcel"></h3><input id="productExcelInput" type="file" accept=".xlsx,.xls"><button onclick="importProductsExcel()" data-i18n="import"></button></div>
+          <div class="card" style="margin-top:0"><h3 data-i18n="ingredientsExcel"></h3><input id="ingredientExcelInput" type="file" accept=".xlsx,.xls"><button onclick="importIngredientsExcel()" data-i18n="import"></button></div>
+          <div class="card" style="margin-top:0"><h3 data-i18n="ocrExcel"></h3><input id="ocrExcelInput" type="file" accept=".xlsx,.xls"><button onclick="importOcrCorrectionsExcel()" data-i18n="import"></button></div>
+        </div>
+        <div class="inline-actions">
+          <button onclick="exportProductsTemplate()" data-i18n="exportProducts"></button>
+          <button onclick="exportIngredientsTemplate()" data-i18n="exportIngredients"></button>
+          <button onclick="exportOcrTemplate()" data-i18n="exportOcr"></button>
+        </div>
+        <div id="excelImportStatus" class="result"></div>
+        <h3 data-i18n="pending"></h3>
+        <div id="pendingProducts"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-top">
+      <h2 id="modalTitle"></h2>
+      <div class="inline-actions" style="margin-top:0">
+        <button onclick="shareCurrentModal()" data-i18n="share"></button>
+        <button class="primary" onclick="closeModal()" data-i18n="close"></button>
+      </div>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const I18N = {"ja": {"pageTitle": "肌診断 × 理想設計 × 全成分比較デモ", "pageLead": "化粧品と健康食品の両方を扱うデモです。理想設計・おすすめ製品・成分一覧・ランキング・OCR補助比較を1つのHTMLで試せます。", "navBuilder": "理想設計", "navCatalog": "おすすめ製品", "navIngredients": "成分一覧", "navRanking": "ランキング", "navMongolia": "モンゴル産特集", "adBadge": "広告", "adHeadline": "同じ成分名でも育ち方で質が全然違うのを知っていますか？", "adBody": "モンゴルの広大な大地で育った成分を体験してください。", "adButton": "モンゴル産特集を見る", "section1": "1. ジャンルとカテゴリ", "section2": "2. チャート式の診断", "section3": "3. 使用感と避けたいもの", "section4": "4. 推奨成分", "section5": "5. 理想設計のまとめ", "section6": "6. おすすめ製品との比較", "section7": "7. 画像解析で比較", "domain": "ジャンル", "subcategory": "カテゴリ", "usage": "使うタイミング", "texture": "使用感 / 味の方向", "philosophy": "設計思想", "avoid": "避けたいもの", "diagnose": "診断する", "shareDiagnosis": "診断結果をSNSに載せる", "build": "理想設計を出す", "reset": "リセット", "saveRanking": "ランキングに保存", "share": "SNSに載せる", "catalogTitle": "おすすめ製品一覧", "ingredientsTitle": "成分一覧", "rankingTitle": "ランキング", "mongoliaTitle": "モンゴル産特集", "mongoliaIntro": "モンゴル由来ストーリーを持つ成分を一覧化しています。クリックで成分詳細を確認できます。", "sort": "並び順", "period": "期間", "badgeFilter": "バッジ", "all": "すべて", "allTime": "全期間", "year": "年間", "month": "月間", "week": "週間", "day": "日間", "sortViews": "注目順", "sortNew": "新しい順", "sortLikes": "いいね順", "tabFormula": "理想処方", "tabProduct": "おすすめ製品", "tabIngredient": "成分", "adminTitle": "管理者", "adminPassword": "管理者パスワード", "login": "ログイン", "resetData": "初期データに戻す", "productsExcel": "おすすめ製品Excel", "ingredientsExcel": "成分辞書Excel", "ocrExcel": "OCR補正辞書Excel", "import": "取り込む", "exportProducts": "製品テンプレート書き出し", "exportIngredients": "成分テンプレート書き出し", "exportOcr": "OCR補正テンプレート書き出し", "pending": "承認待ち製品", "productName": "製品名", "brand": "ブランド名", "overallImage": "製品全体図", "ingredientImage": "全成分欄の画像", "ocrManual": "OCR補助入力（任意）", "analyze": "解析して比較", "saveUploaded": "この製品を保存", "previewOverall": "製品全体図プレビュー", "previewIngredient": "全成分欄プレビュー", "ocrProcessed": "OCR前処理後", "ocrResult": "OCR結果", "close": "閉じる", "edit": "編集", "delete": "削除", "approve": "承認", "save": "保存", "noCatalog": "条件に合うおすすめ製品はありません。", "noIngredients": "条件に合う成分はありません。", "noCompare": "まず理想設計を作成してください。", "compareFallback": "同カテゴリの商品がなかったため、同ジャンル内のおすすめ製品を比較表示しています。", "comparePromo": "成分名だけでなく原料背景でも選ぶ。", "mongoliaFeatureTag": "モンゴル産あります", "badgesAll": "すべて", "badgesWith": "バッジあり", "badgesNone": "バッジなし", "badgeMongolia": "モンゴルブランド", "badgeStory": "原料ストーリーあり", "badgeCustom": "カスタム", "adminHint": "Ctrl + Shift + A、またはタイトルをダブルクリックで管理者を開けます。", "shareCopied": "共有文をコピーしました。", "ocrNeedManual": "OCR結果が取得できない場合はOCR補助入力を使ってください。", "ocrDone": "解析が完了しました。", "ocrNoImage": "先に画像を選択してください。", "ocrNoText": "OCRまたは補助入力に失敗しました。", "storyLine": "同じ成分名でも、産地や育ち方で品質は変わります。", "relatedProducts": "モンゴル産登録製品", "diagnosisResult": "診断結果", "concerns": "気になりやすい方向", "recommended": "推奨成分", "summary": "まとめ", "evaluationGraph": "評価グラフ", "comparisonComments": "比較コメント", "selectRangeReset": "範囲リセット", "selectWholeImage": "画像全体を選択", "andCompare": "と理想設計の詳細比較", "openAdmin": "管理者を開く", "details": "詳細", "ingredientsLabel": "成分", "adTextLabel": "紹介文", "urlLabel": "URL", "badgeLabel": "バッジ", "customBadgeLabel": "カスタムバッジ名", "storyTextLabel": "ストーリー文", "mongoliaIngredientsLabel": "モンゴル産成分", "tagsLabel": "タグ", "roleLabel": "役割", "shortLabel": "概要", "detailLabel": "詳細", "meritsLabel": "メリット", "cautionsLabel": "注意点", "chooseFile": "先にファイルを選択してください。", "wrongPassword": "パスワードが違います。"}, "en": {"pageTitle": "Skin Diagnosis × Ideal Design × Ingredient Comparison Demo", "pageLead": "This demo covers both cosmetics and supplements. You can try ideal design, recommended products, ingredients, ranking, and OCR-assisted comparison in one HTML file.", "navBuilder": "Ideal Design", "navCatalog": "Products", "navIngredients": "Ingredients", "navRanking": "Ranking", "navMongolia": "Mongolia Feature", "adBadge": "Ad", "adHeadline": "Did you know ingredients with the same name can differ greatly depending on how they are grown?", "adBody": "Experience ingredients grown on the vast land of Mongolia.", "adButton": "View Mongolia Feature", "section1": "1. Domain and Category", "section2": "2. Chart Diagnosis", "section3": "3. Feel and Avoid Items", "section4": "4. Recommended Ingredients", "section5": "5. Ideal Design Summary", "section6": "6. Comparison with Recommended Products", "section7": "7. Compare by Image Analysis", "domain": "Domain", "subcategory": "Category", "usage": "Usage Timing", "texture": "Feel / Taste Direction", "philosophy": "Design Concept", "avoid": "Items to Avoid", "diagnose": "Diagnose", "shareDiagnosis": "Share Diagnosis", "build": "Build Ideal Design", "reset": "Reset", "saveRanking": "Save to Ranking", "share": "Share", "catalogTitle": "Recommended Products", "ingredientsTitle": "Ingredient List", "rankingTitle": "Ranking", "mongoliaTitle": "Mongolia Feature", "mongoliaIntro": "This page lists ingredients with Mongolian source stories. Click an ingredient to view details.", "sort": "Sort", "period": "Period", "badgeFilter": "Badge", "all": "All", "allTime": "All time", "year": "Yearly", "month": "Monthly", "week": "Weekly", "day": "Daily", "sortViews": "Most viewed", "sortNew": "Newest", "sortLikes": "Most liked", "tabFormula": "Ideal Formula", "tabProduct": "Products", "tabIngredient": "Ingredients", "adminTitle": "Admin", "adminPassword": "Admin Password", "login": "Login", "resetData": "Reset to Seed Data", "productsExcel": "Products Excel", "ingredientsExcel": "Ingredients Excel", "ocrExcel": "OCR Corrections Excel", "import": "Import", "exportProducts": "Export Product Template", "exportIngredients": "Export Ingredient Template", "exportOcr": "Export OCR Template", "pending": "Pending Products", "productName": "Product Name", "brand": "Brand", "overallImage": "Product Image", "ingredientImage": "Ingredient Label Image", "ocrManual": "Manual OCR Helper (Optional)", "analyze": "Analyze and Compare", "saveUploaded": "Save This Product", "previewOverall": "Product Preview", "previewIngredient": "Ingredient Preview", "ocrProcessed": "Processed Image", "ocrResult": "OCR Result", "close": "Close", "edit": "Edit", "delete": "Delete", "approve": "Approve", "save": "Save", "noCatalog": "No recommended products match the filters.", "noIngredients": "No ingredients match the filters.", "noCompare": "Please build an ideal design first.", "compareFallback": "No exact category match was found, so products in the same domain are shown instead.", "comparePromo": "Choose not only by ingredient name but also by ingredient background.", "mongoliaFeatureTag": "Mongolia source available", "badgesAll": "All", "badgesWith": "With badge", "badgesNone": "No badge", "badgeMongolia": "Mongolia Brand", "badgeStory": "Story Badge", "badgeCustom": "Custom", "adminHint": "Press Ctrl + Shift + A or double-click the title to open Admin.", "shareCopied": "Share text copied.", "ocrNeedManual": "If OCR fails, use the manual OCR helper input.", "ocrDone": "Analysis complete.", "ocrNoImage": "Please choose an image first.", "ocrNoText": "OCR or manual helper did not produce text.", "storyLine": "Even ingredients with the same name can differ in quality depending on origin and growing conditions.", "relatedProducts": "Products registered with Mongolian source", "diagnosisResult": "Diagnosis", "concerns": "Likely concerns", "recommended": "Recommended ingredients", "summary": "Summary", "evaluationGraph": "Evaluation Graph", "comparisonComments": "Comparison Comments", "selectRangeReset": "Reset Range", "selectWholeImage": "Select Whole Image", "andCompare": "vs Ideal Design", "openAdmin": "Open Admin", "details": "Details", "ingredientsLabel": "Ingredients", "adTextLabel": "Ad Text", "urlLabel": "URL", "badgeLabel": "Badge", "customBadgeLabel": "Custom Badge Name", "storyTextLabel": "Story Text", "mongoliaIngredientsLabel": "Mongolia Ingredients", "tagsLabel": "Tags", "roleLabel": "Role", "shortLabel": "Short", "detailLabel": "Detail", "meritsLabel": "Merits", "cautionsLabel": "Cautions", "chooseFile": "Choose a file first.", "wrongPassword": "Wrong password."}, "zh": {"pageTitle": "肌肤诊断 × 理想设计 × 成分比较演示", "pageLead": "这个演示同时支持化妆品和健康食品。你可以在一个HTML中体验理想设计、推荐产品、成分列表、排行榜和OCR辅助比较。", "navBuilder": "理想设计", "navCatalog": "推荐产品", "navIngredients": "成分列表", "navRanking": "排行榜", "navMongolia": "蒙古原料特集", "adBadge": "广告", "adHeadline": "你知道吗？即使成分名称相同，生长环境不同，品质也会完全不同。", "adBody": "体验生长在蒙古广阔土地上的成分。", "adButton": "查看蒙古原料特集", "section1": "1. 领域与类别", "section2": "2. 图表式诊断", "section3": "3. 使用感与避开项", "section4": "4. 推荐成分", "section5": "5. 理想设计总结", "section6": "6. 与推荐产品比较", "section7": "7. 图片解析比较", "domain": "领域", "subcategory": "类别", "usage": "使用时机", "texture": "使用感 / 风味方向", "philosophy": "设计思想", "avoid": "想避免的项目", "diagnose": "开始诊断", "shareDiagnosis": "分享诊断结果", "build": "生成理想设计", "reset": "重置", "saveRanking": "保存到排行榜", "share": "分享", "catalogTitle": "推荐产品列表", "ingredientsTitle": "成分列表", "rankingTitle": "排行榜", "mongoliaTitle": "蒙古原料特集", "mongoliaIntro": "这里汇总具有蒙古来源故事的成分。点击成分可查看详细信息。", "sort": "排序", "period": "期间", "badgeFilter": "徽章", "all": "全部", "allTime": "全部时间", "year": "年", "month": "月", "week": "周", "day": "日", "sortViews": "关注度", "sortNew": "最新", "sortLikes": "点赞优先", "tabFormula": "理想配方", "tabProduct": "推荐产品", "tabIngredient": "成分", "adminTitle": "管理员", "adminPassword": "管理员密码", "login": "登录", "resetData": "恢复初始数据", "productsExcel": "产品Excel", "ingredientsExcel": "成分Excel", "ocrExcel": "OCR纠错Excel", "import": "导入", "exportProducts": "导出产品模板", "exportIngredients": "导出成分模板", "exportOcr": "导出OCR模板", "pending": "待审核产品", "productName": "产品名", "brand": "品牌", "overallImage": "产品整体图", "ingredientImage": "成分图像", "ocrManual": "手动OCR辅助输入（可选）", "analyze": "解析并比较", "saveUploaded": "保存该产品", "previewOverall": "产品预览", "previewIngredient": "成分预览", "ocrProcessed": "处理后图像", "ocrResult": "OCR结果", "close": "关闭", "edit": "编辑", "delete": "删除", "approve": "通过", "save": "保存", "noCatalog": "没有符合条件的推荐产品。", "noIngredients": "没有符合条件的成分。", "noCompare": "请先生成理想设计。", "compareFallback": "没有找到同类别产品，因此显示同领域的推荐产品。", "comparePromo": "不仅看成分名称，也要看原料背景。", "mongoliaFeatureTag": "有蒙古产版本", "badgesAll": "全部", "badgesWith": "有徽章", "badgesNone": "无徽章", "badgeMongolia": "蒙古品牌", "badgeStory": "原料故事", "badgeCustom": "自定义", "adminHint": "按 Ctrl + Shift + A，或双击标题可打开管理员。", "shareCopied": "已复制分享文字。", "ocrNeedManual": "如果OCR失败，请使用手动OCR辅助输入。", "ocrDone": "解析完成。", "ocrNoImage": "请先选择图片。", "ocrNoText": "OCR或手动输入未生成文本。", "storyLine": "即使成分名称相同，产地和生长环境不同，品质也会变化。", "relatedProducts": "已登记蒙古来源的产品", "diagnosisResult": "诊断结果", "concerns": "关注方向", "recommended": "推荐成分", "summary": "总结", "evaluationGraph": "评价图表", "comparisonComments": "比较评论", "selectRangeReset": "重置范围", "selectWholeImage": "选择整张图片", "andCompare": "与理想设计比较", "openAdmin": "打开管理员", "details": "详情", "ingredientsLabel": "成分", "adTextLabel": "介绍文", "urlLabel": "URL", "badgeLabel": "徽章", "customBadgeLabel": "自定义徽章名", "storyTextLabel": "故事文", "mongoliaIngredientsLabel": "蒙古来源成分", "tagsLabel": "标签", "roleLabel": "角色", "shortLabel": "概要", "detailLabel": "详细", "meritsLabel": "优点", "cautionsLabel": "注意点", "chooseFile": "请先选择文件。", "wrongPassword": "密码错误。"}};
+const SEED_PRODUCTS = [{"id": "p1", "domain": "cosmetics", "subcategory": "serum", "name": "モイストバリア美容液", "brand": "自社ブランド", "ingredients": ["セラミド", "ヒアルロン酸Na"], "adText": "乾燥とバリアを重視した自社の定番美容液です。", "adUrl": "#", "storyBadge": "", "storyText": "", "mongoliaIngredients": [], "createdAt": 1710000010000, "views": 5}, {"id": "p2", "domain": "cosmetics", "subcategory": "serum", "name": "モンゴルプラセンタ美容液", "brand": "自社ブランド", "ingredients": ["ウマプラセンタエキス", "ナイアシンアミド"], "adText": "モンゴル由来ウマプラセンタエキスを軸にしたストーリー美容液です。", "adUrl": "#", "storyBadge": "モンゴルブランド", "storyText": "モンゴルの広大な環境で育った原料背景を訴求しています。", "mongoliaIngredients": ["ウマプラセンタエキス"], "createdAt": 1710000011000, "views": 12}, {"id": "p3", "domain": "health", "subcategory": "capsule", "name": "休息サポートカプセル", "brand": "自社ブランド", "ingredients": ["GABA"], "adText": "休息設計をわかりやすく提案する健康食品です。", "adUrl": "#", "storyBadge": "", "storyText": "", "mongoliaIngredients": [], "createdAt": 1710000012000, "views": 3}, {"id": "p4", "domain": "health", "subcategory": "powder", "name": "腸活ビューティーパウダー", "brand": "自社ブランド", "ingredients": ["乳酸菌", "コラーゲンペプチド"], "adText": "腸活と美容を両立した健康食品の提案例です。", "adUrl": "#", "storyBadge": "", "storyText": "", "mongoliaIngredients": [], "createdAt": 1710000013000, "views": 4}];
+const SEED_INGREDIENTS = {"ウマプラセンタエキス": {"domain": "cosmetics", "tags": ["整肌", "ハリ", "原料ストーリー"], "role": "主役", "short": "モンゴル由来ストーリーを載せやすい差別化成分です。", "detail": "同じプラセンタ系でも由来背景や育成環境でストーリーが変わります。自社のモンゴル由来ウマプラセンタエキスは、広い環境で育った原料背景を訴求できる前提のデモ成分です。", "merits": ["差別化しやすい", "ハリ文脈と相性が良い"], "cautions": ["表現は薬機法・表示法確認が必要です"], "dimensions": {"moisture": 6, "barrier": 8, "brightening": 6, "firmness": 28, "soothing": 10}, "mongolia": true, "createdAt": 1710000000000, "views": 0}, "セラミド": {"domain": "cosmetics", "tags": ["保湿", "バリア"], "role": "主役", "short": "バリアケアを支える代表成分です。", "detail": "乾燥・敏感の文脈で使いやすい成分です。", "merits": ["バリア訴求しやすい"], "cautions": ["攻め感は出しにくい"], "dimensions": {"moisture": 24, "barrier": 30, "brightening": 0, "firmness": 0, "soothing": 10}, "mongolia": false, "createdAt": 1710000001000, "views": 0}, "ヒアルロン酸Na": {"domain": "cosmetics", "tags": ["保湿"], "role": "主役", "short": "保湿の主役成分です。", "detail": "うるおい訴求で定番です。", "merits": ["分かりやすい保湿"], "cautions": ["単独では設計全体を語れない"], "dimensions": {"moisture": 32, "barrier": 6, "brightening": 0, "firmness": 0, "soothing": 4}, "mongolia": false, "createdAt": 1710000002000, "views": 0}, "ナイアシンアミド": {"domain": "cosmetics", "tags": ["透明感", "ハリ", "整肌"], "role": "主役", "short": "多機能で使いやすい人気成分です。", "detail": "透明感・整肌・ハリの軸で語りやすい成分です。", "merits": ["多機能訴求"], "cautions": ["刺激配慮が必要な場合あり"], "dimensions": {"moisture": 8, "barrier": 10, "brightening": 28, "firmness": 24, "soothing": 8}, "mongolia": false, "createdAt": 1710000003000, "views": 0}, "GABA": {"domain": "health", "tags": ["休息", "健康食品"], "role": "主役", "short": "休息系の定番原料です。", "detail": "落ち着きや休息の設計文脈で使われやすい原料です。", "merits": ["休息設計で分かりやすい"], "cautions": ["表現確認が必要"], "dimensions": {"energy": 0, "rest": 32, "beauty": 0, "gut": 0, "balance": 10}, "mongolia": false, "createdAt": 1710000004000, "views": 0}, "乳酸菌": {"domain": "health", "tags": ["腸活", "健康食品"], "role": "主役", "short": "腸活設計で定番です。", "detail": "腸活・毎日続ける設計と相性が良い原料です。", "merits": ["腸活で分かりやすい"], "cautions": ["菌種ごとの差が大きい"], "dimensions": {"energy": 0, "rest": 0, "beauty": 8, "gut": 34, "balance": 8}, "mongolia": false, "createdAt": 1710000005000, "views": 0}, "コラーゲンペプチド": {"domain": "health", "tags": ["美容", "健康食品"], "role": "主役", "short": "美容系健康食品で定番です。", "detail": "美容感を出したい健康食品で使いやすい原料です。", "merits": ["美容文脈で使いやすい"], "cautions": ["差別化は由来や組み合わせ次第"], "dimensions": {"energy": 0, "rest": 0, "beauty": 30, "gut": 0, "balance": 8}, "mongolia": false, "createdAt": 1710000006000, "views": 0}};
+const SEED_OCR = [{"wrong": "ヒアル口ン酸Na", "correct": "ヒアルロン酸Na"}, {"wrong": "ウマプラセンタ工キス", "correct": "ウマプラセンタエキス"}, {"wrong": "全成分", "correct": ""}];
+const STORAGE_PREFIX = 'beauty_demo_v16_';
+const ADMIN_PASSWORD = 'admin123';
+
+const DOMAIN_OPTIONS = {
+  cosmetics:['toner','emulsion','serum','cream','mascara'],
+  health:['capsule','tablet','powder','drink']
+};
+const SUBCATEGORY_LABELS = {
+  toner:{ja:'化粧水',en:'Toner',zh:'化妆水'},
+  emulsion:{ja:'乳液',en:'Emulsion',zh:'乳液'},
+  serum:{ja:'美容液',en:'Serum',zh:'精华'},
+  cream:{ja:'クリーム',en:'Cream',zh:'面霜'},
+  mascara:{ja:'まつげ美容液',en:'Lash Serum',zh:'睫毛精华'},
+  capsule:{ja:'カプセル',en:'Capsule',zh:'胶囊'},
+  tablet:{ja:'タブレット',en:'Tablet',zh:'片剂'},
+  powder:{ja:'粉末',en:'Powder',zh:'粉末'},
+  drink:{ja:'ドリンク',en:'Drink',zh:'饮料'}
+};
+const QUESTION_DEFS = {
+  cosmetics:[
+    ['dryness',{ja:'つっぱりやすい',en:'Feels dry or tight',zh:'容易紧绷干燥'}],
+    ['oiliness',{ja:'皮脂でべたつく',en:'Gets oily easily',zh:'容易出油'}],
+    ['sensitivity',{ja:'赤み・刺激を感じやすい',en:'Sensitive / redness',zh:'容易泛红或刺激'}],
+    ['dullness',{ja:'くすみが気になる',en:'Concerned about dullness',zh:'在意暗沉'}],
+    ['firmness',{ja:'ハリ不足が気になる',en:'Concerned about firmness',zh:'在意弹力不足'}],
+  ],
+  health:[
+    ['rest',{ja:'休息を整えたい',en:'Want better rest',zh:'想改善休息'}],
+    ['energy',{ja:'活力を高めたい',en:'Want more energy',zh:'想提升活力'}],
+    ['beauty',{ja:'美容を意識したい',en:'Want beauty support',zh:'想关注美容'}],
+    ['gut',{ja:'腸活を意識したい',en:'Want gut support',zh:'想关注肠道'}],
+    ['balance',{ja:'毎日のバランスを整えたい',en:'Want daily balance',zh:'想改善日常平衡'}],
+  ]
+};
+const AVOID_OPTIONS = {
+  cosmetics:[
+    {key:'fragrance',label:{ja:'香料は避けたい',en:'Avoid fragrance',zh:'避免香精'}},
+    {key:'animal',label:{ja:'動物由来は避けたい',en:'Avoid animal origin',zh:'避免动物来源'}},
+    {key:'active',label:{ja:'攻めすぎは避けたい',en:'Avoid aggressive actives',zh:'避免过强活性'}},
+  ],
+  health:[
+    {key:'strongTaste',label:{ja:'強い味は避けたい',en:'Avoid strong taste',zh:'避免强烈口感'}},
+    {key:'manyIngredients',label:{ja:'成分数が多すぎるのは避けたい',en:'Avoid too many ingredients',zh:'避免成分过多'}},
+    {key:'animal',label:{ja:'動物由来は避けたい',en:'Avoid animal origin',zh:'避免动物来源'}},
+  ]
+};
+
+const state = {
+  lang:'ja',
+  adminUnlocked:false,
+  rankingTab:'formula',
+  answers:{},
+  selectedAvoids:[],
+  currentDiagnosis:null,
+  recommendedIngredients:[],
+  selectedIngredients:[],
+  currentFormula:null,
+  currentUploadedProduct:null,
+  modalShareText:'',
+  products:[],
+  ingredients:{},
+  ocrRules:[],
+  rankings:[],
+  importedProducts:[],
+  crop:null,
+  dragging:false,
+  dragStart:null,
+};
+
+function clone(v){return JSON.parse(JSON.stringify(v));}
+function t(key){return (I18N[state.lang] && I18N[state.lang][key]) || I18N.ja[key] || key;}
+function escapeHtml(v){return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");}
+function escapeAttr(v){return escapeHtml(v).replaceAll('`','&#96;');}
+function save(key,val){localStorage.setItem(STORAGE_PREFIX+key, JSON.stringify(val));}
+function load(key, fallback){try{const raw = localStorage.getItem(STORAGE_PREFIX+key); return raw ? JSON.parse(raw) : fallback;}catch(e){return fallback;}}
+function persistAll(){save('products',state.products); save('ingredients',state.ingredients); save('ocr',state.ocrRules); save('rankings',state.rankings); save('imported',state.importedProducts); save('lang',state.lang);}
+function resetAllData(){state.products = clone(SEED_PRODUCTS); state.ingredients = clone(SEED_INGREDIENTS); state.ocrRules = clone(SEED_OCR); state.rankings = []; state.importedProducts = []; persistAll(); renderAll(); alert(t('resetData'));}
+function ensureSeedData(){state.products = load('products', clone(SEED_PRODUCTS)); if(!Array.isArray(state.products) || !state.products.length) state.products = clone(SEED_PRODUCTS); state.ingredients = load('ingredients', clone(SEED_INGREDIENTS)); if(!state.ingredients || !Object.keys(state.ingredients).length) state.ingredients = clone(SEED_INGREDIENTS); state.ocrRules = load('ocr', clone(SEED_OCR)); if(!Array.isArray(state.ocrRules)) state.ocrRules = clone(SEED_OCR); state.rankings = load('rankings', []); if(!Array.isArray(state.rankings)) state.rankings=[]; state.importedProducts = load('imported', []); if(!Array.isArray(state.importedProducts)) state.importedProducts=[]; state.lang = load('lang','ja');}
+
+function domainLabel(domain){return domain==='health' ? (state.lang==='en'?'Supplements':state.lang==='zh'?'健康食品':'健康食品') : (state.lang==='en'?'Cosmetics':state.lang==='zh'?'化妆品':'化粧品');}
+function subcategoryLabel(key){const v = SUBCATEGORY_LABELS[key]; if(!v) return key || ''; return v[state.lang] || v.ja;}
+function optionLabel(obj){return obj[state.lang] || obj.ja;}
+
+const ENTITY_TRANSLATIONS = {
+  "自社ブランド": {ja:"自社ブランド", en:"Our Brand", zh:"自有品牌"},
+  "モイストバリア美容液": {ja:"モイストバリア美容液", en:"Moist Barrier Serum", zh:"保湿屏障精华"},
+  "モンゴルプラセンタ美容液": {ja:"モンゴルプラセンタ美容液", en:"Mongolia Placenta Serum", zh:"蒙古胎盘精华"},
+  "休息サポートカプセル": {ja:"休息サポートカプセル", en:"Rest Support Capsules", zh:"休息支持胶囊"},
+  "腸活ビューティーパウダー": {ja:"腸活ビューティーパウダー", en:"Gut Beauty Powder", zh:"肠道美容粉"},
+  "乾燥とバリアを重視した自社の定番美容液です。": {ja:"乾燥とバリアを重視した自社の定番美容液です。", en:"A signature in-house serum focused on dryness and barrier care.", zh:"以干燥与屏障护理为重点的自有经典精华。"},
+  "モンゴル由来ウマプラセンタエキスを軸にしたストーリー美容液です。": {ja:"モンゴル由来ウマプラセンタエキスを軸にしたストーリー美容液です。", en:"A story-driven serum centered on Mongolian equine placenta extract.", zh:"以蒙古来源马胎盘提取物为核心的故事型精华。"},
+  "休息設計をわかりやすく提案する健康食品です。": {ja:"休息設計をわかりやすく提案する健康食品です。", en:"A supplement proposal that clearly communicates a rest-focused design.", zh:"能够清晰表达休息设计概念的健康食品。"},
+  "腸活と美容を両立した健康食品の提案例です。": {ja:"腸活と美容を両立した健康食品の提案例です。", en:"A supplement concept balancing gut care and beauty support.", zh:"兼顾肠道护理与美容的健康食品提案。"},
+  "モンゴルの広大な環境で育った原料背景を訴求しています。": {ja:"モンゴルの広大な環境で育った原料背景を訴求しています。", en:"This highlights the ingredient background of being raised in the vast environment of Mongolia.", zh:"突出其生长于蒙古广阔环境中的原料背景。"},
+  "ウマプラセンタエキス": {ja:"ウマプラセンタエキス", en:"Equine Placenta Extract", zh:"马胎盘提取物"},
+  "セラミド": {ja:"セラミド", en:"Ceramide", zh:"神经酰胺"},
+  "ヒアルロン酸Na": {ja:"ヒアルロン酸Na", en:"Sodium Hyaluronate", zh:"透明质酸钠"},
+  "ナイアシンアミド": {ja:"ナイアシンアミド", en:"Niacinamide", zh:"烟酰胺"},
+  "GABA": {ja:"GABA", en:"GABA", zh:"GABA"},
+  "乳酸菌": {ja:"乳酸菌", en:"Lactic Acid Bacteria", zh:"乳酸菌"},
+  "コラーゲンペプチド": {ja:"コラーゲンペプチド", en:"Collagen Peptide", zh:"胶原蛋白肽"},
+  "整肌": {ja:"整肌", en:"Skin conditioning", zh:"调理肌肤"},
+  "ハリ": {ja:"ハリ", en:"Firmness", zh:"弹力"},
+  "原料ストーリー": {ja:"原料ストーリー", en:"Ingredient story", zh:"原料故事"},
+  "保湿": {ja:"保湿", en:"Moisture", zh:"保湿"},
+  "バリア": {ja:"バリア", en:"Barrier", zh:"屏障"},
+  "透明感": {ja:"透明感", en:"Brightness", zh:"透亮"},
+  "休息": {ja:"休息", en:"Rest", zh:"休息"},
+  "健康食品": {ja:"健康食品", en:"Supplement", zh:"健康食品"},
+  "腸活": {ja:"腸活", en:"Gut care", zh:"肠道护理"},
+  "主役": {ja:"主役", en:"Core", zh:"核心"},
+  "モンゴル由来ストーリーを載せやすい差別化成分です。": {ja:"モンゴル由来ストーリーを載せやすい差別化成分です。", en:"A differentiating ingredient that works well with a Mongolia-origin story.", zh:"便于承载蒙古来源故事的差异化成分。"},
+  "同じプラセンタ系でも由来背景や育成環境でストーリーが変わります。自社のモンゴル由来ウマプラセンタエキスは、広い環境で育った原料背景を訴求できる前提のデモ成分です。": {ja:"同じプラセンタ系でも由来背景や育成環境でストーリーが変わります。自社のモンゴル由来ウマプラセンタエキスは、広い環境で育った原料背景を訴求できる前提のデモ成分です。", en:"Even within placenta-derived materials, the story changes depending on origin and growth conditions. This in-house Mongolian equine placenta extract is a demo ingredient designed to highlight that broad-environment background.", zh:"即使同属胎盘类原料，其来源背景与生长环境不同，故事也会不同。这个自有的蒙古来源马胎盘提取物是用于强调广阔生长环境背景的演示成分。"},
+  "バリアケアを支える代表成分です。": {ja:"バリアケアを支える代表成分です。", en:"A representative ingredient supporting barrier care.", zh:"支持屏障护理的代表性成分。"},
+  "乾燥・敏感の文脈で使いやすい成分です。": {ja:"乾燥・敏感の文脈で使いやすい成分です。", en:"An ingredient easy to position for dryness and sensitivity.", zh:"适合用于干燥与敏感语境的成分。"},
+  "保湿の主役成分です。": {ja:"保湿の主役成分です。", en:"A core moisturizing ingredient.", zh:"核心保湿成分。"},
+  "うるおい訴求で定番です。": {ja:"うるおい訴求で定番です。", en:"A classic choice for hydration claims.", zh:"补水诉求中的经典成分。"},
+  "多機能で使いやすい人気成分です。": {ja:"多機能で使いやすい人気成分です。", en:"A popular multi-functional ingredient.", zh:"人气很高的多功能成分。"},
+  "透明感・整肌・ハリの軸で語りやすい成分です。": {ja:"透明感・整肌・ハリの軸で語りやすい成分です。", en:"Easy to explain in terms of brightness, conditioning, and firmness.", zh:"便于从透亮、调理与弹力角度进行说明的成分。"},
+  "休息系の定番原料です。": {ja:"休息系の定番原料です。", en:"A standard ingredient for rest-focused products.", zh:"休息型产品中的经典原料。"},
+  "落ち着きや休息の設計文脈で使われやすい原料です。": {ja:"落ち着きや休息の設計文脈で使われやすい原料です。", en:"Often used in formulas focused on calmness and rest.", zh:"常用于强调平静与休息设计的配方。"},
+  "腸活設計で定番です。": {ja:"腸活設計で定番です。", en:"A standard ingredient for gut-care products.", zh:"肠道护理设计中的经典成分。"},
+  "腸活・毎日続ける設計と相性が良い原料です。": {ja:"腸活・毎日続ける設計と相性が良い原料です。", en:"Fits well with gut-care concepts designed for daily use.", zh:"适合肠道护理与每日持续使用设计的原料。"},
+  "差別化しやすい": {ja:"差別化しやすい", en:"Easy to differentiate", zh:"容易差异化"},
+  "ハリ文脈と相性が良い": {ja:"ハリ文脈と相性が良い", en:"Works well with firmness claims", zh:"适合弹力诉求"},
+  "表現は薬機法・表示法確認が必要です": {ja:"表現は薬機法・表示法確認が必要です", en:"Claims should be checked for regulatory compliance.", zh:"相关表述需要确认法规合规性。"},
+  "バリア訴求しやすい": {ja:"バリア訴求しやすい", en:"Easy to communicate barrier care", zh:"易于表达屏障护理"},
+  "攻め感は出しにくい": {ja:"攻め感は出しにくい", en:"Harder to position as an aggressive active", zh:"不易表现为强效型成分"},
+  "分かりやすい保湿": {ja:"分かりやすい保湿", en:"Easy-to-understand hydration", zh:"易理解的保湿"},
+  "単独では設計全体を語れない": {ja:"単独では設計全体を語れない", en:"Cannot explain the whole design alone", zh:"单独无法说明整个配方设计"},
+  "多機能訴求": {ja:"多機能訴求", en:"Multi-benefit appeal", zh:"多功能诉求"},
+  "刺激配慮が必要な場合あり": {ja:"刺激配慮が必要な場合あり", en:"May require irritation considerations", zh:"有时需要考虑刺激性"},
+  "休息設計で分かりやすい": {ja:"休息設計で分かりやすい", en:"Easy to explain as a rest concept", zh:"便于表达为休息设计"},
+  "表現確認が必要": {ja:"表現確認が必要", en:"Claims need checking", zh:"需要确认表述"},
+  "腸活で分かりやすい": {ja:"腸活で分かりやすい", en:"Easy to explain as gut care", zh:"便于表达为肠道护理"},
+  "菌種ごとの差が大きい": {ja:"菌種ごとの差が大きい", en:"Differences between strains can be large", zh:"不同菌种差异较大"}
+};
+function trEntity(text){ const s = String(text ?? ''); const m = ENTITY_TRANSLATIONS[s]; return m ? (m[state.lang] || m.ja || s) : s; }
+function productDisplayName(p){ return trEntity(p.name || ''); }
+function productDisplayBrand(p){ return trEntity(p.brand || ''); }
+function productDisplayText(p){ return trEntity(p.adText || ''); }
+function ingredientDisplayName(name){ return trEntity(name); }
+function ingredientDisplayTags(tags){ return (tags||[]).map(v=>trEntity(v)); }
+function ingredientDisplayShort(ing){ return trEntity(ing.short || ''); }
+function ingredientDisplayDetail(ing){ return trEntity(ing.detail || ''); }
+function isMongoliaBadge(badge){ const b = String(badge || ''); return [t('badgeMongolia'),'モンゴルブランド','Mongolia Brand','蒙古品牌'].includes(b); }
+function renderProductIngredientTags(p){
+  const highlight = isMongoliaBadge(p.storyBadge) ? new Set(p.mongoliaIngredients || []) : new Set();
+  return (p.ingredients || []).map(v => `<span class="tag ${highlight.has(v)?'mongolia':''}">${escapeHtml(ingredientDisplayName(v))}</span>`).join('');
+}
+
+
+function applyStaticTranslations(){
+  document.documentElement.lang = state.lang==='en' ? 'en' : state.lang==='zh' ? 'zh-CN' : 'ja';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  ['langJa','langEn','langZh'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('lang'+(state.lang==='ja'?'Ja':state.lang==='en'?'En':'Zh')).classList.add('active');
+}
+function populateSelects(){
+  const domainSelects = ['domainSelect','catalogDomainFilter','ingredientDomainFilter','rankingDomainFilter'];
+  for(const id of domainSelects){
+    const sel = document.getElementById(id); const prev = sel.value || (id==='domainSelect'?'cosmetics':'all');
+    sel.innerHTML = `<option value="all">${t('all')}</option><option value="cosmetics">${domainLabel('cosmetics')}</option><option value="health">${domainLabel('health')}</option>`;
+    sel.value = id==='domainSelect' ? (prev==='all'?'cosmetics':prev) : prev;
+  }
+  populateCategorySelect('domainSelect','subcategorySelect', true);
+  populateCategorySelect('catalogDomainFilter','catalogSubcategoryFilter', false);
+  document.getElementById('usageTimeSelect').innerHTML = [
+    ['daily',{ja:'毎日用',en:'Daily',zh:'日常'}],['morning',{ja:'朝用',en:'Morning',zh:'早上'}],['night',{ja:'夜用',en:'Night',zh:'晚上'}],['special',{ja:'集中ケア用',en:'Special care',zh:'集中护理'}],
+  ].map(([v,l])=>`<option value="${v}">${optionLabel(l)}</option>`).join('');
+  document.getElementById('textureSelect').innerHTML = [
+    ['light',{ja:'軽め / すっきり',en:'Light / refreshing',zh:'轻盈 / 清爽'}],['balanced',{ja:'バランス',en:'Balanced',zh:'平衡'}],['rich',{ja:'濃厚 / しっかり',en:'Rich / dense',zh:'浓厚 / 充实'}]
+  ].map(([v,l])=>`<option value="${v}">${optionLabel(l)}</option>`).join('');
+  document.getElementById('philosophySelect').innerHTML = [
+    ['minimal',{ja:'シンプル',en:'Simple',zh:'简洁'}],['balanced',{ja:'バランス',en:'Balanced',zh:'平衡'}],['active',{ja:'攻め',en:'Active',zh:'强化'}]
+  ].map(([v,l])=>`<option value="${v}">${optionLabel(l)}</option>`).join('');
+  const sortCommon = `<option value="views">${t('sortViews')}</option><option value="new">${t('sortNew')}</option>`;
+  document.getElementById('catalogSort').innerHTML = sortCommon;
+  document.getElementById('ingredientSort').innerHTML = sortCommon;
+  document.getElementById('rankingSort').innerHTML = `<option value="likes">${t('sortLikes')}</option>`+sortCommon;
+  const periodOptions = `<option value="all">${t('allTime')}</option><option value="year">${t('year')}</option><option value="month">${t('month')}</option><option value="week">${t('week')}</option><option value="day">${t('day')}</option>`;
+  ['catalogPeriod','ingredientPeriod','rankingPeriod'].forEach(id=>document.getElementById(id).innerHTML = periodOptions);
+  document.getElementById('catalogBadgeFilter').innerHTML = `<option value="all">${t('badgesAll')}</option><option value="with">${t('badgesWith')}</option><option value="none">${t('badgesNone')}</option><option value="mongolia">${t('badgeMongolia')}</option><option value="story">${t('badgeStory')}</option><option value="custom">${t('badgeCustom')}</option>`;
+}
+function populateCategorySelect(domainId, categoryId, noAll){
+  const domain = document.getElementById(domainId).value || 'cosmetics';
+  const sel = document.getElementById(categoryId); const prev = sel.value;
+  let html = noAll ? '' : `<option value="all">${t('all')}</option>`;
+  if(domain==='all'){ sel.innerHTML = html; return; }
+  html += DOMAIN_OPTIONS[domain].map(k=>`<option value="${k}">${subcategoryLabel(k)}</option>`).join('');
+  sel.innerHTML = html;
+  if(noAll) sel.value = prev && DOMAIN_OPTIONS[domain].includes(prev) ? prev : DOMAIN_OPTIONS[domain][0];
+  else sel.value = prev && (prev==='all' || DOMAIN_OPTIONS[domain].includes(prev)) ? prev : 'all';
+}
+
+function switchLang(lang){ state.lang = lang; save('lang', lang); renderAll(); }
+function showPage(page){ document.querySelectorAll('.page').forEach(el=>el.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active')); document.getElementById(page).classList.add('active'); document.querySelector(`.nav-btn[data-page="${page}"]`)?.classList.add('active'); if(page==='admin' && !state.adminUnlocked){ document.getElementById('adminLoginBox').classList.remove('hidden'); document.getElementById('adminBody').classList.add('hidden'); } }
+
+function defaultAnswers(){ const defs = QUESTION_DEFS[document.getElementById('domainSelect').value||'cosmetics']; const out={}; defs.forEach(([k])=>out[k]=3); return out; }
+function renderQuestionArea(){ state.answers = defaultAnswers(); const defs = QUESTION_DEFS[document.getElementById('domainSelect').value||'cosmetics']; document.getElementById('questionArea').innerHTML = defs.map(([key,label])=>`<div class="question-row"><div><b>${escapeHtml(optionLabel(label))}</b></div><input type="range" min="1" max="5" step="1" value="${state.answers[key]}" oninput="updateAnswer('${key}',this.value)"><div class="range-value" id="range_${key}">${state.answers[key]}</div></div>`).join(''); drawRadar(); }
+function updateAnswer(key,val){ state.answers[key]=Number(val); document.getElementById('range_'+key).textContent=val; drawRadar(); }
+function drawRadar(){ const canvas = document.getElementById('radarCanvas'); const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); const defs = QUESTION_DEFS[document.getElementById('domainSelect').value||'cosmetics']; const cx=canvas.width/2, cy=canvas.height/2, radius=110, n=defs.length; ctx.strokeStyle='#d1d5db'; for(let step=1; step<=5; step++){ ctx.beginPath(); for(let i=0;i<n;i++){ const a=-Math.PI/2 + Math.PI*2*i/n; const r=radius*step/5; const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.closePath(); ctx.stroke(); }
+  for(let i=0;i<n;i++){ const a=-Math.PI/2 + Math.PI*2*i/n; const x=cx+Math.cos(a)*radius, y=cy+Math.sin(a)*radius; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke(); const label=optionLabel(defs[i][1]); ctx.fillStyle='#374151'; ctx.font='12px Arial'; ctx.textAlign=(x<cx-10?'right':x>cx+10?'left':'center'); ctx.fillText(label, cx+Math.cos(a)*(radius+24), cy+Math.sin(a)*(radius+24)); }
+  ctx.beginPath(); for(let i=0;i<n;i++){ const a=-Math.PI/2 + Math.PI*2*i/n; const r=radius*(state.answers[defs[i][0]]||3)/5; const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.closePath(); ctx.fillStyle='rgba(37,99,235,.18)'; ctx.fill(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=2; ctx.stroke();
+}
+
+function renderAvoidPills(){ const domain = document.getElementById('domainSelect').value||'cosmetics'; document.getElementById('avoidPills').innerHTML = AVOID_OPTIONS[domain].map(o=>`<div class="pill ${state.selectedAvoids.includes(o.key)?'active':''}" onclick="toggleAvoid('${o.key}')">${escapeHtml(optionLabel(o.label))}</div>`).join(''); }
+function toggleAvoid(key){ const i=state.selectedAvoids.indexOf(key); if(i>=0) state.selectedAvoids.splice(i,1); else state.selectedAvoids.push(key); renderAvoidPills(); }
+
+function diagnoseFromQuestions(){
+  const domain = document.getElementById('domainSelect').value||'cosmetics';
+  let diagnosis='', concerns=[];
+  if(domain==='cosmetics'){
+    const a = state.answers;
+    diagnosis = a.sensitivity>=4 ? (state.lang==='en'?'Sensitive skin':state.lang==='zh'?'敏感肌':'敏感肌') :
+      a.dryness>=4 && a.oiliness<=2 ? (state.lang==='en'?'Dry skin':state.lang==='zh'?'干燥肌':'乾燥肌') :
+      a.oiliness>=4 && a.dryness<=2 ? (state.lang==='en'?'Oily skin':state.lang==='zh'?'油性肌':'脂性肌') :
+      (state.lang==='en'?'Combination skin':state.lang==='zh'?'混合肌':'混合肌');
+    if(a.dryness>=4) concerns.push('乾燥');
+    if(a.sensitivity>=4) concerns.push('敏感');
+    if(a.dullness>=4) concerns.push('透明感');
+    if(a.firmness>=4) concerns.push('ハリ');
+    if(!concerns.length) concerns.push('バランス');
+  } else {
+    const a = state.answers;
+    diagnosis = a.rest>=4 ? (state.lang==='en'?'Rest focused':state.lang==='zh'?'休息重点':'休息重視') :
+      a.energy>=4 ? (state.lang==='en'?'Energy focused':state.lang==='zh'?'活力重点':'活力重視') :
+      a.beauty>=4 ? (state.lang==='en'?'Beauty focused':state.lang==='zh'?'美容重点':'美容重視') :
+      a.gut>=4 ? (state.lang==='en'?'Gut focused':state.lang==='zh'?'肠道重点':'腸活重視') :
+      (state.lang==='en'?'Balanced':state.lang==='zh'?'平衡重点':'バランス重視');
+    if(a.rest>=4) concerns.push('休息');
+    if(a.energy>=4) concerns.push('活力');
+    if(a.beauty>=4) concerns.push('美容');
+    if(a.gut>=4) concerns.push('腸活');
+    if(!concerns.length) concerns.push('栄養');
+  }
+  state.currentDiagnosis = {diagnosis, concerns, domain};
+  document.getElementById('diagnosisResult').innerHTML = `<div><b>${t('diagnosisResult')}:</b> ${escapeHtml(diagnosis)}</div><div style="margin-top:8px"><b>${t('concerns')}:</b> ${concerns.map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('')}</div>`;
+}
+
+function ingredientMatchesConcern(name, domain, concerns){
+  const ing = state.ingredients[name]; if(!ing || ing.domain!==domain) return false;
+  const joined = [name, ...(ing.tags||[])].join(' ');
+  if(domain==='cosmetics'){
+    if(concerns.includes('乾燥') && /セラミド|ヒアルロン酸|保湿/.test(joined)) return true;
+    if(concerns.includes('敏感') && /整肌|バリア|セラミド/.test(joined)) return true;
+    if(concerns.includes('透明感') && /透明感|ナイアシン/.test(joined)) return true;
+    if(concerns.includes('ハリ') && /ハリ|プラセンタ|ナイアシン/.test(joined)) return true;
+    return concerns.includes('バランス');
+  } else {
+    if(concerns.includes('休息') && /GABA|休息/.test(joined)) return true;
+    if(concerns.includes('活力') && /活力/.test(joined)) return true;
+    if(concerns.includes('美容') && /美容|コラーゲン/.test(joined)) return true;
+    if(concerns.includes('腸活') && /腸活|乳酸菌/.test(joined)) return true;
+    return concerns.includes('栄養');
+  }
+}
+
+function buildIdealFormula(){
+  if(!state.currentDiagnosis) diagnoseFromQuestions();
+  const domain = document.getElementById('domainSelect').value||'cosmetics';
+  const names = Object.keys(state.ingredients).filter(n=>state.ingredients[n].domain===domain);
+  state.recommendedIngredients = names.filter(n=>ingredientMatchesConcern(n, domain, state.currentDiagnosis.concerns)).slice(0,8);
+  if(!state.recommendedIngredients.length) state.recommendedIngredients = names.slice(0,5);
+  state.selectedIngredients = [...state.recommendedIngredients];
+  renderRecommendedIngredients();
+  refreshFormulaOutputs();
+}
+
+
+function renderRecommendedIngredients(){
+  const box = document.getElementById('recommendedIngredients');
+  if(!state.recommendedIngredients.length){ box.innerHTML = `<div class="result">-</div>`; return; }
+  box.innerHTML = state.recommendedIngredients.map((name,idx)=>{
+    const ing = state.ingredients[name] || {};
+    return `<div class="product">
+      <div class="product-head">
+        <div>
+          <label><input type="checkbox" ${state.selectedIngredients.includes(name)?'checked':''} onchange="toggleIngredient('${name.replaceAll("'","\'")}',this.checked)"> ${escapeHtml(ingredientDisplayName(name))}</label>
+          <div>${ingredientDisplayTags(ing.tags).map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('')}${ing.mongolia?`<span class="tag mongolia">${t('mongoliaFeatureTag')}</span>`:''}</div>
+          <div class="mini-note">${escapeHtml(ingredientDisplayShort(ing))}</div>
+        </div>
+        <button onclick="event.stopPropagation();toggleIngredientDetail(${idx})">${t('details')}</button>
+      </div>
+      <div id="ingDetail_${idx}" class="hidden" style="margin-top:10px">${escapeHtml(ingredientDisplayDetail(ing))}</div>
+    </div>`;
+  }).join('');
+}
+function toggleIngredientDetail(idx){ document.getElementById('ingDetail_'+idx).classList.toggle('hidden'); }
+function toggleIngredient(name,checked){ if(checked){ if(!state.selectedIngredients.includes(name)) state.selectedIngredients.push(name);} else {state.selectedIngredients = state.selectedIngredients.filter(v=>v!==name);} refreshFormulaOutputs(); }
+
+function analyzeIngredientNames(names){ return names.map(n=>({name:n, ...(state.ingredients[n]||{})})); }
+function calcMetrics(items, domain){
+  const defs = domain==='health'
+    ? [{key:'energy',label:{ja:'活力',en:'Energy',zh:'活力'}},{key:'rest',label:{ja:'休息',en:'Rest',zh:'休息'}},{key:'beauty',label:{ja:'美容',en:'Beauty',zh:'美容'}},{key:'gut',label:{ja:'腸活',en:'Gut',zh:'肠道'}},{key:'balance',label:{ja:'バランス',en:'Balance',zh:'平衡'}}]
+    : [{key:'moisture',label:{ja:'保湿',en:'Moisture',zh:'保湿'}},{key:'barrier',label:{ja:'バリア',en:'Barrier',zh:'屏障'}},{key:'brightening',label:{ja:'透明感',en:'Brightness',zh:'透亮'}},{key:'firmness',label:{ja:'ハリ',en:'Firmness',zh:'弹力'}},{key:'soothing',label:{ja:'整肌',en:'Soothing',zh:'舒缓'}}];
+  return defs.map(def=>{ let score=0, count=0; items.forEach(item=>{ const v = (item.dimensions||{})[def.key]||0; score += v; if(v>0) count += 1; }); return {key:def.key,label:optionLabel(def.label),score:Math.max(0,Math.min(100,score)),count}; });
+}
+function renderMetricBars(metrics){ return metrics.map(m=>`<div class="scorebar"><div class="scorebar-head"><span>${escapeHtml(m.label)} ${m.count}</span><span>${m.score}</span></div><div class="scorebar-outer"><div class="scorebar-inner" style="width:${m.score}%"></div></div></div>`).join(''); }
+function refreshFormulaOutputs(){
+  if(!state.selectedIngredients.length){ document.getElementById('formulaSummary').innerHTML=''; document.getElementById('barGraphArea').innerHTML=''; renderIdealComparisons(); return; }
+  const domain = document.getElementById('domainSelect').value||'cosmetics';
+  const subcategory = document.getElementById('subcategorySelect').value||'';
+  const items = analyzeIngredientNames(state.selectedIngredients);
+  const metrics = calcMetrics(items, domain);
+  state.currentFormula = {id:'f_'+Date.now(),name: state.lang==='en'?'Ideal Design':state.lang==='zh'?'理想设计':'理想設計', domain, subcategory, ingredients:[...state.selectedIngredients], metrics, createdAt:Date.now(), likes:0, views:0};
+  document.getElementById('formulaSummary').innerHTML = `<div class="result"><div><span class="tag">${domainLabel(domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(subcategory))}</span></div><div style="margin-top:10px"><b>${escapeHtml(state.currentFormula.name)}</b></div><div style="margin-top:8px">${state.currentFormula.ingredients.map(v=>`<span class="tag good">${escapeHtml(ingredientDisplayName(v))}</span>`).join('')}</div></div>`;
+  document.getElementById('barGraphArea').innerHTML = renderMetricBars(metrics);
+  renderIdealComparisons();
+}
+function compareAgainstIdeal(prod){
+  if(!state.currentFormula) return null;
+  const ideal = new Set(state.currentFormula.ingredients);
+  const actual = new Set(prod.ingredients||[]);
+  const overlap = [...ideal].filter(v=>actual.has(v));
+  const missing = [...ideal].filter(v=>!actual.has(v));
+  const extra = [...actual].filter(v=>!ideal.has(v));
+  return {overlap, missing, extra, score:Math.max(0,Math.min(100, overlap.length*18 - missing.length*5 - extra.length*3 + 40))};
+}
+function getApprovedProducts(){ return [...state.products, ...state.importedProducts.filter(v=>v.status==='approved')]; }
+function renderIdealComparisons(){
+  const box = document.getElementById('idealCompareBox');
+  if(!state.currentFormula){ box.innerHTML = `<div class="result">${t('noCompare')}</div>`; return; }
+  const exact = getApprovedProducts().filter(p=>p.domain===state.currentFormula.domain && p.subcategory===state.currentFormula.subcategory);
+  const usedFallback = !exact.length;
+  const source = exact.length ? exact : getApprovedProducts().filter(p=>p.domain===state.currentFormula.domain);
+  const cards = source.slice(0,3).map(p=>{
+    const cmp = compareAgainstIdeal(p);
+    return `<div class="product" onclick="openCompareWithProduct('${p.id}')"><div class="product-head"><div><div><span class="tag">${domainLabel(p.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(p.subcategory||''))}</span></div><h3 style="margin-top:8px">${escapeHtml(p.name)}</h3><div class="mini-note">${escapeHtml(p.brand||'')}</div><div style="margin-top:8px">${cmp.overlap.map(v=>`<span class="tag good">${escapeHtml(ingredientDisplayName(v))}</span>`).join('')}</div><div class="mini-note">${t('comparePromo')}</div></div>${storyStamp(p)}</div></div>`;
+  }).join('');
+  box.innerHTML = (usedFallback && source.length ? `<div class="result">${t('compareFallback')}</div>` : '') + (source.length ? cards : `<div class="result">${t('noCatalog')}</div>`);
+}
+
+function inPeriod(ts, period){ if(period==='all') return true; const now = Date.now(); const ms = period==='day'?86400000:period==='week'?86400000*7:period==='month'?86400000*31:86400000*365; return (now - (ts||0)) <= ms; }
+function storyStamp(p){ if(!p.storyBadge) return ''; const cls = p.storyBadge===t('badgeMongolia') || p.storyBadge==='モンゴルブランド' || p.storyBadge==='Mongolia Brand' || p.storyBadge==='蒙古品牌' ? 'stamp-mongolia' : (p.storyBadge===t('badgeStory') || p.storyBadge==='原料ストーリーあり' ? 'stamp-story' : 'stamp-custom'); return `<div class="product-stamp ${cls}">${escapeHtml(p.storyBadge)}</div>`; }
+
+function productCardHtml(p, source){
+  const adminBtns = state.adminUnlocked ? `<div class="inline-actions"><button onclick="event.stopPropagation();openEditProduct('${p.id}')">${t('edit')}</button><button class="danger" onclick="event.stopPropagation();deleteProduct('${p.id}')">${t('delete')}</button></div>` : '';
+  return `<div class="product" onclick="openProductDetail('${p.id}','${source}')"><div class="product-head"><div><div><span class="tag">${domainLabel(p.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(p.subcategory||''))}</span>${p.storyBadge?`<span class="tag story">${escapeHtml(p.storyBadge)}</span>`:''}</div><h3 style="margin-top:8px">${escapeHtml(productDisplayName(p))}</h3><div class="mini-note">${escapeHtml(productDisplayBrand(p))}</div><div style="margin-top:8px">${renderProductIngredientTags(p)}</div><div class="mini-note" style="margin-top:8px">${escapeHtml(productDisplayText(p))}</div>${adminBtns}</div>${storyStamp(p)}</div></div>`;
+}
+function ingredientCardHtml(name, ing){
+  const safe = name.replaceAll("'","\'");
+  const adminBtns = state.adminUnlocked ? `<div class="inline-actions"><button onclick="event.stopPropagation();openEditIngredient('${safe}')">${t('edit')}</button><button class="danger" onclick="event.stopPropagation();deleteIngredient('${safe}')">${t('delete')}</button></div>` : '';
+  return `<div class="product" onclick="openIngredientDetail('${safe}')"><div class="product-head"><div><div><span class="tag">${domainLabel(ing.domain)}</span>${ing.mongolia?`<span class="tag mongolia">${t('mongoliaFeatureTag')}</span>`:''}</div><h3 style="margin-top:8px">${escapeHtml(ingredientDisplayName(name))}</h3><div>${ingredientDisplayTags(ing.tags).map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('')}</div><div class="mini-note" style="margin-top:8px">${escapeHtml(ingredientDisplayShort(ing))}</div>${adminBtns}</div></div></div>`;
+}
+function renderCatalogPage(name, ing){
+  const adminBtns = state.adminUnlocked ? `<div class="inline-actions"><button onclick="event.stopPropagation();openEditIngredient('${name.replaceAll("'","\\'")}')">${t('edit')}</button><button class="danger" onclick="event.stopPropagation();deleteIngredient('${name.replaceAll("'","\\'")}')">${t('delete')}</button></div>` : '';
+  return `<div class="product" onclick="openIngredientDetail('${name.replaceAll("'","\\'")}')"><div class="product-head"><div><div><span class="tag">${domainLabel(ing.domain)}</span>${ing.mongolia?`<span class="tag mongolia">${t('mongoliaFeatureTag')}</span>`:''}</div><h3 style="margin-top:8px">${escapeHtml(name)}</h3><div>${ingredientDisplayTags(ing.tags).map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('')}</div><div class="mini-note" style="margin-top:8px">${escapeHtml(ing.short||'')}</div>${adminBtns}</div></div></div>`;
+}
+
+function renderCatalogPage(){
+  let items = getApprovedProducts();
+  const domain = document.getElementById('catalogDomainFilter').value, sub = document.getElementById('catalogSubcategoryFilter').value, sort=document.getElementById('catalogSort').value, period=document.getElementById('catalogPeriod').value, badge=document.getElementById('catalogBadgeFilter').value;
+  if(domain!=='all') items = items.filter(v=>v.domain===domain);
+  if(sub!=='all') items = items.filter(v=>v.subcategory===sub);
+  items = items.filter(v=>inPeriod(v.createdAt, period));
+  if(badge==='with') items = items.filter(v=>!!v.storyBadge);
+  if(badge==='none') items = items.filter(v=>!v.storyBadge);
+  if(badge==='mongolia') items = items.filter(v=>(v.storyBadge||'').includes('モンゴル') || (v.storyBadge||'').toLowerCase().includes('mongolia') || (v.storyBadge||'').includes('蒙古'));
+  if(badge==='story') items = items.filter(v=>(v.storyBadge||'').includes('ストーリー') || (v.storyBadge||'').toLowerCase().includes('story'));
+  if(badge==='custom') items = items.filter(v=>!!v.storyBadge && !((v.storyBadge||'').includes('モンゴル') || (v.storyBadge||'').includes('ストーリー') || (v.storyBadge||'').toLowerCase().includes('mongolia') || (v.storyBadge||'').toLowerCase().includes('story')));
+  items.sort((a,b)=> sort==='new' ? (b.createdAt-a.createdAt) : ((b.views||0)-(a.views||0) || (b.createdAt-a.createdAt)));
+  document.getElementById('catalogList').innerHTML = items.length ? items.map(v=>productCardHtml(v,'catalog')).join('') : `<div class="result">${t('noCatalog')}</div>`;
+}
+
+function renderIngredientPage(){
+  let items = Object.entries(state.ingredients).map(([name,v])=>({name,...v}));
+  const domain = document.getElementById('ingredientDomainFilter').value, sort=document.getElementById('ingredientSort').value, period=document.getElementById('ingredientPeriod').value;
+  if(domain!=='all') items = items.filter(v=>v.domain===domain);
+  items = items.filter(v=>inPeriod(v.createdAt||Date.now(), period));
+  items.sort((a,b)=> sort==='new' ? (b.createdAt-a.createdAt) : ((b.views||0)-(a.views||0) || (b.createdAt-a.createdAt)));
+  document.getElementById('ingredientList').innerHTML = items.length ? items.map(v=>ingredientCardHtml(v.name,v)).join('') : `<div class="result">${t('noIngredients')}</div>`;
+}
+function renderMongoliaPage(){
+  let items = Object.entries(state.ingredients).filter(([,v])=>v.mongolia).map(([name,v])=>({name,...v}));
+  items.sort((a,b)=>(b.views||0)-(a.views||0) || (b.createdAt-a.createdAt));
+  document.getElementById('mongoliaFeatureList').innerHTML = items.length ? items.map(v=>{
+    const related = getApprovedProducts().filter(p=>isMongoliaBadge(p.storyBadge) && (p.mongoliaIngredients||[]).includes(v.name));
+    return `<div class="product" onclick="openIngredientDetail('${v.name.replaceAll("'","\'")}')"><div class="product-head"><div><div><span class="tag">${domainLabel(v.domain)}</span><span class="tag mongolia">${t('mongoliaFeatureTag')}</span></div><h3 style="margin-top:8px">${escapeHtml(ingredientDisplayName(v.name))}</h3><div>${ingredientDisplayTags(v.tags).map(x=>`<span class="tag">${escapeHtml(x)}</span>`).join('')}</div><div class="mini-note" style="margin-top:8px">${escapeHtml(ingredientDisplayShort(v))}</div>${related.length?`<div class="story-strip">${t('relatedProducts')}: ${related.map(p=>`<a href="#" onclick="openProductDetail('${p.id}','mongolia');return false;">${escapeHtml(productDisplayName(p))}</a>`).join(' / ')}</div>`:''}</div></div></div>`;
+  }).join('') : `<div class="result">${t('noIngredients')}</div>`;
+}
+function switchRankingTab(tab){ state.rankingTab = tab; document.querySelectorAll('[data-ranktab]').forEach(el=>el.classList.toggle('active', el.dataset.ranktab===tab)); renderRankingPage(); }
+function renderRankingPage(){
+  const domain = document.getElementById('rankingDomainFilter').value, sort=document.getElementById('rankingSort').value, period=document.getElementById('rankingPeriod').value;
+  let html = '<div class="result">-</div>';
+  if(state.rankingTab==='formula'){
+    let items = state.rankings.filter(v=>domain==='all' || v.domain===domain).filter(v=>inPeriod(v.createdAt, period));
+    items.sort((a,b)=> sort==='likes' ? ((b.likes||0)-(a.likes||0) || (b.views||0)-(a.views||0)) : sort==='new' ? (b.createdAt-a.createdAt) : ((b.views||0)-(a.views||0)));
+    html = items.length ? items.map(v=>`<div class="product" onclick="openFormulaDetail('${v.id}')"><div class="product-head"><div><div><span class="tag">${domainLabel(v.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(v.subcategory||''))}</span></div><h3 style="margin-top:8px">${escapeHtml(v.name)}</h3><div>${(v.ingredients||[]).map(x=>`<span class="tag good">${escapeHtml(x)}</span>`).join('')}</div><div class="mini-note" style="margin-top:8px">❤ ${v.likes||0} / 👁 ${v.views||0}</div>${state.adminUnlocked?`<div class="inline-actions"><button onclick="event.stopPropagation();editFormula('${v.id}')">${t('edit')}</button><button class="danger" onclick="event.stopPropagation();deleteFormula('${v.id}')">${t('delete')}</button></div>`:''}</div></div></div>`).join('') : '<div class="result">-</div>';
+  } else if(state.rankingTab==='product'){
+    let items = getApprovedProducts().filter(v=>domain==='all' || v.domain===domain).filter(v=>inPeriod(v.createdAt, period));
+    items.sort((a,b)=> sort==='new' ? (b.createdAt-a.createdAt) : ((b.views||0)-(a.views||0)));
+    html = items.length ? items.map(v=>productCardHtml(v,'ranking')).join('') : '<div class="result">-</div>';
+  } else {
+    let items = Object.entries(state.ingredients).map(([name,v])=>({name,...v})).filter(v=>domain==='all' || v.domain===domain).filter(v=>inPeriod(v.createdAt||Date.now(), period));
+    items.sort((a,b)=> sort==='new' ? (b.createdAt-a.createdAt) : ((b.views||0)-(a.views||0)));
+    html = items.length ? items.map(v=>ingredientCardHtml(v.name,v)).join('') : '<div class="result">-</div>';
+  }
+  document.getElementById('rankingList').innerHTML = html;
+}
+
+function openModal(title, body, shareText){ document.getElementById('modalTitle').textContent = title; document.getElementById('modalBody').innerHTML = body; state.modalShareText = shareText || title; document.getElementById('modal').classList.add('active'); }
+function closeModal(){ document.getElementById('modal').classList.remove('active'); }
+async function shareText(text){ try{ if(navigator.share){ await navigator.share({text}); return; } await navigator.clipboard.writeText(text); alert(t('shareCopied')); } catch(e){ alert(text); } }
+function shareCurrentModal(){ if(state.modalShareText) shareText(state.modalShareText); }
+function shareDiagnosis(){ if(!state.currentDiagnosis) diagnoseFromQuestions(); shareText(`${t('diagnosisResult')}: ${state.currentDiagnosis.diagnosis}\n${t('concerns')}: ${state.currentDiagnosis.concerns.join('、')}`); }
+function shareCurrentFormula(){ if(!state.currentFormula) return; shareText(`${state.currentFormula.name}\n${state.currentFormula.ingredients.join('、')}`); }
+
+function buildComparePanel(title, ingredients, metrics, otherIngredients){
+  const otherSet = new Set(otherIngredients||[]);
+  return `<div class="compare-panel"><h3>${escapeHtml(title)}</h3><div>${(ingredients||[]).map(v=>`<span class="tag ${otherSet.has(v)?'good':''}">${escapeHtml(v)}</span>`).join('')}</div><div class="mini-note">${t('storyLine')}</div>${renderMetricBars(metrics)}</div>`;
+}
+function openCompareWithProduct(productId){
+  const p = getApprovedProducts().find(v=>v.id===productId); if(!p || !state.currentFormula) return;
+  p.views=(p.views||0)+1; persistAll();
+  const cmp = compareAgainstIdeal(p); const metrics = calcMetrics(analyzeIngredientNames(p.ingredients), p.domain);
+  const comments = [
+    cmp.overlap.length ? `${cmp.overlap.map(ingredientDisplayName).join('、')}` : '-',
+    cmp.missing.length ? cmp.missing.map(ingredientDisplayName).join('、') : '-',
+    cmp.extra.length ? cmp.extra.map(ingredientDisplayName).join('、') : '-'
+  ];
+  const body = `<div class="compare-columns">${buildComparePanel((state.lang==='en'?'Ideal Design':state.lang==='zh'?'理想设计':'理想設計'), state.currentFormula.ingredients, state.currentFormula.metrics, p.ingredients)}${buildComparePanel(productDisplayName(p), p.ingredients, metrics, state.currentFormula.ingredients)}</div><div class="result" style="margin-top:16px"><b>${t('comparisonComments')}</b><ul><li>${comments[0]}</li><li>${comments[1]}</li><li>${comments[2]}</li></ul><div class="story-strip">${t('storyLine')}</div></div>`;
+  openModal(`${productDisplayName(p)} ${t('andCompare')}`, body, `${productDisplayName(p)}\n${cmp.overlap.map(ingredientDisplayName).join('、')}`);
+  renderCatalogPage(); renderRankingPage();
+}
+
+function openProductDetail(id, source){
+  const p = getApprovedProducts().find(v=>v.id===id); if(!p) return;
+  p.views=(p.views||0)+1; persistAll();
+  const metrics = calcMetrics(analyzeIngredientNames(p.ingredients), p.domain);
+  const body = `<div class="result"><div><span class="tag">${domainLabel(p.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(p.subcategory||''))}</span>${p.storyBadge?`<span class="tag story">${escapeHtml(p.storyBadge)}</span>`:''}</div><div style="margin-top:10px">${renderProductIngredientTags(p)}</div><div style="margin-top:10px">${escapeHtml(productDisplayText(p))}</div>${p.storyText?`<div class="story-strip">${escapeHtml(trEntity(p.storyText))}</div>`:''}</div><div class="compare-panel" style="margin-top:16px"><h3>${t('evaluationGraph')}</h3>${renderMetricBars(metrics)}</div>${(p.overallImage||p.ingredientImage)?`<div class="image-grid" style="margin-top:16px">${p.overallImage?`<div><h4>${t('overallImage')}</h4><img class="detail-image" src="${escapeAttr(p.overallImage)}"></div>`:''}${p.ingredientImage?`<div><h4>${t('ingredientImage')}</h4><img class="detail-image" src="${escapeAttr(p.ingredientImage)}"></div>`:''}</div>`:''}`;
+  openModal(productDisplayName(p), body, `${productDisplayName(p)}
+${(p.ingredients||[]).map(ingredientDisplayName).join('、')}`);
+  renderCatalogPage(); renderRankingPage(); renderMongoliaPage();
+}
+function openIngredientDetail(name){
+  const ing = state.ingredients[name]; if(!ing) return;
+  ing.views=(ing.views||0)+1; persistAll();
+  const related = getApprovedProducts().filter(p=>isMongoliaBadge(p.storyBadge) && (p.mongoliaIngredients||[]).includes(name));
+  const metrics = calcMetrics([{dimensions:ing.dimensions}], ing.domain);
+  const body = `<div class="result"><div><span class="tag">${domainLabel(ing.domain)}</span>${ing.mongolia?`<span class="tag mongolia">${t('mongoliaFeatureTag')}</span>`:''}</div><div style="margin-top:10px">${ingredientDisplayTags(ing.tags).map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('')}</div><div style="margin-top:10px">${escapeHtml(ingredientDisplayDetail(ing))}</div>${related.length?`<div class="story-strip">${t('relatedProducts')}: ${related.map(p=>`<a href="#" onclick="openProductDetail('${p.id}','ingredient');return false;">${escapeHtml(productDisplayName(p))}</a>`).join(' / ')}</div>`:''}</div><div class="compare-panel" style="margin-top:16px"><h3>${t('evaluationGraph')}</h3>${renderMetricBars(metrics)}</div>`;
+  openModal(ingredientDisplayName(name), body, `${ingredientDisplayName(name)}
+${ingredientDisplayShort(ing)}`);
+  renderIngredientPage(); renderRankingPage(); renderMongoliaPage();
+}
+function openFormulaDetail(id){
+  const f = state.rankings.find(v=>v.id===id); if(!f) return;
+  f.views=(f.views||0)+1; persistAll();
+  const body = `<div class="result"><div><span class="tag">${domainLabel(f.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(f.subcategory||''))}</span></div><div style="margin-top:10px">${(f.ingredients||[]).map(v=>`<span class="tag good">${escapeHtml(ingredientDisplayName(v))}</span>`).join('')}</div><div style="margin-top:10px">❤ ${f.likes||0} / 👁 ${f.views||0}</div></div><div class="compare-panel" style="margin-top:16px"><h3>${t('evaluationGraph')}</h3>${renderMetricBars(f.metrics||[])}</div>`;
+  openModal(f.name, body, `${f.name}
+${(f.ingredients||[]).map(ingredientDisplayName).join('、')}`);
+  renderRankingPage();
+}
+function saveFormulaToRanking(){ if(!state.currentFormula) return; state.rankings.push({...clone(state.currentFormula), id:'r_'+Date.now(), likes:0, views:0}); persistAll(); renderRankingPage(); showPage('ranking'); }
+function editFormula(id){ const f = state.rankings.find(v=>v.id===id); if(!f) return; const body=`<label>${t('productName')}</label><input id="editFormulaName" type="text" value="${escapeAttr(f.name)}"><label>${t('ingredientsLabel')}</label><textarea id="editFormulaIngredients">${escapeHtml((f.ingredients||[]).join('、'))}</textarea><div class="inline-actions"><button class="primary" onclick="saveEditedFormula('${id}')">${t('save')}</button></div>`; openModal(t('edit'), body, ''); }
+function saveEditedFormula(id){ const f = state.rankings.find(v=>v.id===id); if(!f) return; f.name=document.getElementById('editFormulaName').value.trim(); f.ingredients=document.getElementById('editFormulaIngredients').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean); f.metrics=calcMetrics(analyzeIngredientNames(f.ingredients), f.domain); persistAll(); closeModal(); renderRankingPage(); }
+function deleteFormula(id){ if(!confirm(t('delete')+'?')) return; state.rankings = state.rankings.filter(v=>v.id!==id); persistAll(); renderRankingPage(); }
+
+function openEditProduct(){ if(!state.currentFormula) return; state.rankings.push({...clone(state.currentFormula), id:'r_'+Date.now(), likes:0, views:0}); persistAll(); renderRankingPage(); showPage('ranking'); }
+function editFormula(id){ const f = state.rankings.find(v=>v.id===id); if(!f) return; const body=`<label>${t('productName')}</label><input id="editFormulaName" type="text" value="${escapeAttr(f.name)}"><label>${t('ingredientsLabel')}</label><textarea id="editFormulaIngredients">${escapeHtml((f.ingredients||[]).join('、'))}</textarea><div class="inline-actions"><button class="primary" onclick="saveEditedFormula('${id}')">${t('save')}</button></div>`; openModal(t('edit'), body, ''); }
+function saveEditedFormula(id){ const f = state.rankings.find(v=>v.id===id); if(!f) return; f.name=document.getElementById('editFormulaName').value.trim(); f.ingredients=document.getElementById('editFormulaIngredients').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean); f.metrics=calcMetrics(analyzeIngredientNames(f.ingredients), f.domain); persistAll(); closeModal(); renderRankingPage(); }
+function deleteFormula(id){ if(!confirm(t('delete')+'?')) return; state.rankings = state.rankings.filter(v=>v.id!==id); persistAll(); renderRankingPage(); }
+
+
+function openEditProduct(id){
+  const p = [...state.products, ...state.importedProducts].find(v=>v.id===id); if(!p) return;
+  const badgeOptions = ['', t('badgeMongolia'), t('badgeStory'), 'Custom'];
+  const body = `
+    <div class="grid-2">
+      <div>
+        <label>${t('domain')}</label><select id="editProductDomain"><option value="cosmetics">${domainLabel('cosmetics')}</option><option value="health">${domainLabel('health')}</option></select>
+        <label>${t('subcategory')}</label><select id="editProductSubcategory"></select>
+        <label>${t('productName')}</label><input id="editProductName" type="text" value="${escapeAttr(p.name)}">
+        <label>${t('brand')}</label><input id="editProductBrand" type="text" value="${escapeAttr(p.brand||'')}">
+        <label>${t('ingredientsLabel')}</label><textarea id="editProductIngredients" oninput="renderEditProductMongoliaCandidates({id:'${id}', ingredients:this.value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean), mongoliaIngredients:Array.from(document.querySelectorAll('.edit-mongolia-checkbox:checked')).map(el=>el.value)})">${escapeHtml((p.ingredients||[]).join('、'))}</textarea>
+        <label>${t('adTextLabel')}</label><textarea id="editProductText">${escapeHtml(p.adText||'')}</textarea>
+      </div>
+      <div>
+        <label>${t('urlLabel')}</label><input id="editProductUrl" type="url" value="${escapeAttr(p.adUrl||'#')}">
+        <label>${t('badgeLabel')}</label><select id="editProductBadge">${badgeOptions.map(v=>`<option value="${escapeAttr(v)}">${escapeHtml(v||t('badgesNone'))}</option>`).join('')}</select>
+        <label>${t('customBadgeLabel')}</label><input id="editProductBadgeCustom" type="text" value="${escapeAttr(!badgeOptions.includes(p.storyBadge||'') ? (p.storyBadge||'') : '')}">
+        <label>${t('storyTextLabel')}</label><textarea id="editProductStory">${escapeHtml(p.storyText||'')}</textarea>
+        <label>${t('mongoliaIngredientsLabel')}</label>
+        <div id="editProductMongoliaCandidates" class="result" style="min-height:80px"></div>
+      </div>
+    </div>
+    <div class="inline-actions"><button class="primary" onclick="saveEditedProduct('${id}')">${t('save')}</button></div>`;
+  openModal(t('edit'), body, '');
+  document.getElementById('editProductDomain').value = p.domain;
+  populateAdminSubcategories('editProductDomain', 'editProductSubcategory');
+  document.getElementById('editProductSubcategory').value = p.subcategory;
+  document.getElementById('editProductBadge').value = badgeOptions.includes(p.storyBadge||'') ? (p.storyBadge||'') : 'Custom';
+  renderEditProductMongoliaCandidates(p);
+}
+function renderEditProductMongoliaCandidates(p){
+  const target = document.getElementById('editProductMongoliaCandidates');
+  if(!target) return;
+  const currentIngredients = (document.getElementById('editProductIngredients')?.value || (p.ingredients||[]).join('、')).split(/[、,]+/).map(v=>v.trim()).filter(Boolean);
+  const candidates = currentIngredients.filter(name=>state.ingredients[name] && state.ingredients[name].mongolia);
+  const selected = new Set((p.mongoliaIngredients||[]).filter(name=>candidates.includes(name)));
+  target.innerHTML = candidates.length ? candidates.map(name=>`<label style="font-weight:400;display:flex;align-items:center;gap:8px;margin-top:8px"><input type="checkbox" class="edit-mongolia-checkbox" value="${escapeAttr(name)}" ${selected.has(name)?'checked':''}> <span class="tag mongolia">${escapeHtml(name)}</span></label>`).join('') : `<div class="mini-note">${t('mongoliaFeatureTag')} ${state.lang==='en'?'ingredient candidates are not available in this product.':state.lang==='zh'?'的候选成分目前不存在于该产品中。':'の候補成分はこの製品内にありません。'}</div>`;
+}
+function populateAdminSubcategories(domainId, targetId){
+  const domain = document.getElementById(domainId).value || 'cosmetics';
+  document.getElementById(targetId).innerHTML = DOMAIN_OPTIONS[domain].map(k=>`<option value="${k}">${subcategoryLabel(k)}</option>`).join('');
+}
+function saveEditedProduct(id){
+  const p = [...state.products, ...state.importedProducts].find(v=>v.id===id); if(!p) return;
+  p.domain = document.getElementById('editProductDomain').value;
+  p.subcategory = document.getElementById('editProductSubcategory').value;
+  p.name = document.getElementById('editProductName').value.trim();
+  p.brand = document.getElementById('editProductBrand').value.trim();
+  p.ingredients = document.getElementById('editProductIngredients').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean);
+  p.adText = document.getElementById('editProductText').value.trim();
+  p.adUrl = document.getElementById('editProductUrl').value.trim() || '#';
+  const badgeSel = document.getElementById('editProductBadge').value;
+  p.storyBadge = badgeSel === 'Custom' ? document.getElementById('editProductBadgeCustom').value.trim() : badgeSel;
+  p.storyText = document.getElementById('editProductStory').value.trim();
+  const allowedMongolia = new Set(p.ingredients.filter(name=>state.ingredients[name] && state.ingredients[name].mongolia));
+  p.mongoliaIngredients = Array.from(document.querySelectorAll('.edit-mongolia-checkbox:checked')).map(el=>el.value).filter(name=>allowedMongolia.has(name));
+  persistAll(); closeModal(); renderCatalogPage(); renderRankingPage(); renderIdealComparisons(); renderMongoliaPage();
+}
+function deleteProduct(id){ if(!confirm(t('delete')+'?')) return; state.products = state.products.filter(v=>v.id!==id); state.importedProducts = state.importedProducts.filter(v=>v.id!==id); persistAll(); renderCatalogPage(); renderRankingPage(); renderAdminPage(); renderIdealComparisons(); }
+
+
+function openEditIngredient(name){
+  const ing = state.ingredients[name]; if(!ing) return;
+  const body = `
+    <label>${t('productName')}</label><input id="editIngName" type="text" value="${escapeAttr(name)}">
+    <div class="grid-2">
+      <div>
+        <label>${t('domain')}</label><select id="editIngDomain"><option value="cosmetics">${domainLabel('cosmetics')}</option><option value="health">${domainLabel('health')}</option></select>
+        <label>${t('tagsLabel')}</label><input id="editIngTags" type="text" value="${escapeAttr((ing.tags||[]).join('、'))}">
+        <label>${t('roleLabel')}</label><input id="editIngRole" type="text" value="${escapeAttr(ing.role||'')}">
+        <label>${t('shortLabel')}</label><textarea id="editIngShort">${escapeHtml(ing.short||'')}</textarea>
+      </div>
+      <div>
+        <label>${t('detailLabel')}</label><textarea id="editIngDetail">${escapeHtml(ing.detail||'')}</textarea>
+        <label>${t('meritsLabel')}</label><input id="editIngMerits" type="text" value="${escapeAttr((ing.merits||[]).join('、'))}">
+        <label>${t('cautionsLabel')}</label><input id="editIngCautions" type="text" value="${escapeAttr((ing.cautions||[]).join('、'))}">
+        <label><input id="editIngMongolia" type="checkbox" ${ing.mongolia?'checked':''}> ${t('mongoliaFeatureTag')}</label>
+      </div>
+    </div>
+    <div class="inline-actions"><button class="primary" onclick="saveEditedIngredient('${name.replaceAll("'","\'")}')">${t('save')}</button></div>`;
+  openModal(t('edit'), body, '');
+  document.getElementById('editIngDomain').value = ing.domain;
+}
+function saveEditedIngredient(originalName){
+  const ing = state.ingredients[originalName]; if(!ing) return;
+  const newName = document.getElementById('editIngName').value.trim() || originalName;
+  const next = {
+    ...ing,
+    domain: document.getElementById('editIngDomain').value,
+    tags: document.getElementById('editIngTags').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+    role: document.getElementById('editIngRole').value.trim(),
+    short: document.getElementById('editIngShort').value.trim(),
+    detail: document.getElementById('editIngDetail').value.trim(),
+    merits: document.getElementById('editIngMerits').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+    cautions: document.getElementById('editIngCautions').value.split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+    mongolia: document.getElementById('editIngMongolia').checked
+  };
+  delete state.ingredients[originalName];
+  state.ingredients[newName] = next;
+  persistAll(); closeModal(); renderIngredientPage(); renderMongoliaPage(); renderRankingPage(); renderRecommendedIngredients();
+}
+function deleteIngredient(name){ if(!confirm(t('delete')+'?')) return; delete state.ingredients[name]; persistAll(); renderIngredientPage(); renderMongoliaPage(); renderRankingPage(); }
+
+function renderAdminPage(){
+  if(!state.adminUnlocked) return;
+  document.getElementById('excelImportStatus').textContent = t('adminHint');
+  const items = state.importedProducts.filter(v=>v.status!=='approved');
+  document.getElementById('pendingProducts').innerHTML = items.length ? items.map(v=>`<div class="product"><h3>${escapeHtml(productDisplayName(v))}</h3><div>${renderProductIngredientTags(v)}</div><div class="inline-actions"><button class="primary" onclick="approveImportedProduct('${v.id}')">${t('approve')}</button><button onclick="openEditProduct('${v.id}')">${t('edit')}</button><button class="danger" onclick="deleteProduct('${v.id}')">${t('delete')}</button></div></div>`).join('') : '<div class="result">-</div>';
+}
+function showAdminAccess(){ showPage('admin'); window.scrollTo({top:0,behavior:'smooth'}); setTimeout(()=>document.getElementById('adminPassword').focus(),50); }
+function unlockAdmin(){ if(document.getElementById('adminPassword').value !== ADMIN_PASSWORD){ alert(t('wrongPassword')); return; } state.adminUnlocked = true; document.getElementById('adminLoginBox').classList.add('hidden'); document.getElementById('adminBody').classList.remove('hidden'); renderAdminPage(); renderCatalogPage(); renderIngredientPage(); renderRankingPage(); }
+function approveImportedProduct(id){ const p = state.importedProducts.find(v=>v.id===id); if(!p) return; p.status='approved'; persistAll(); renderAdminPage(); renderCatalogPage(); renderRankingPage(); }
+
+function loadPreview(file, target){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { target.src = e.target.result; target.style.display='block'; if(target.id==='ingredientPreview') selectWholeImage(); };
+  reader.readAsDataURL(file);
+}
+function bindImageInputs(){
+  document.getElementById('overallImageInput').addEventListener('change', e=>loadPreview(e.target.files[0], document.getElementById('overallPreview')));
+  document.getElementById('ingredientImageInput').addEventListener('change', e=>loadPreview(e.target.files[0], document.getElementById('ingredientPreview')));
+  const stage = document.getElementById('cropStage'); const preview = document.getElementById('ingredientPreview');
+  stage.addEventListener('mousedown', startCrop); window.addEventListener('mousemove', moveCrop); window.addEventListener('mouseup', endCrop);
+}
+function selectWholeImage(){ const preview = document.getElementById('ingredientPreview'); if(!preview.src) return; const stage = document.getElementById('cropStage').getBoundingClientRect(); const img = preview.getBoundingClientRect(); state.crop = {x: img.left-stage.left, y: img.top-stage.top, width: img.width, height: img.height}; drawCropBox(); }
+function resetCropSelection(){ state.crop = null; drawCropBox(); }
+function startCrop(e){ const preview = document.getElementById('ingredientPreview'); if(!preview.src) return; const img = preview.getBoundingClientRect(); if(e.clientX<img.left||e.clientX>img.right||e.clientY<img.top||e.clientY>img.bottom) return; const stage = document.getElementById('cropStage').getBoundingClientRect(); state.dragging = true; state.dragStart = {x:e.clientX-stage.left, y:e.clientY-stage.top}; state.crop = {x:state.dragStart.x,y:state.dragStart.y,width:1,height:1}; drawCropBox(); }
+function moveCrop(e){ if(!state.dragging || !state.dragStart) return; const stage = document.getElementById('cropStage').getBoundingClientRect(); const x = e.clientX-stage.left, y = e.clientY-stage.top; state.crop = {x:Math.min(state.dragStart.x,x), y:Math.min(state.dragStart.y,y), width:Math.abs(x-state.dragStart.x), height:Math.abs(y-state.dragStart.y)}; drawCropBox(); }
+function endCrop(){ state.dragging=false; state.dragStart=null; }
+function drawCropBox(){ const box = document.getElementById('cropBox'); if(!state.crop){ box.style.display='none'; return; } box.style.display='block'; box.style.left = state.crop.x+'px'; box.style.top = state.crop.y+'px'; box.style.width = state.crop.width+'px'; box.style.height = state.crop.height+'px'; }
+async function ensureScript(src, globalName){
+  if(window[globalName]) return true;
+  return new Promise((resolve)=>{ const s=document.createElement('script'); s.src=src; s.onload=()=>resolve(!!window[globalName]); s.onerror=()=>resolve(false); document.head.appendChild(s); });
+}
+function normalizeOCRIngredients(text){
+  let s = String(text||'');
+  state.ocrRules.forEach(r=>{ if(!r.wrong) return; s = s.split(r.wrong).join(r.correct||''); });
+  return [...new Set(s.replace(/[\n\r\t]/g,'、').replace(/[・]/g,'、').split(/[、,]+/).map(v=>v.trim()).filter(Boolean).filter(v=>!/^[※＊*?？!！。、,.\-_=+\/\\()\[\]{}<>~^|]+$/.test(v)))];
+}
+async function analyzeUploadedIngredients(){
+  const ingredientImg = document.getElementById('ingredientPreview');
+  if(!ingredientImg.src && !document.getElementById('ocrManualInput').value.trim()){ document.getElementById('ocrStatus').textContent = t('ocrNoImage'); return; }
+  let text = document.getElementById('ocrManualInput').value.trim();
+  if(!text && ingredientImg.src){
+    const ok = await ensureScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');
+    if(ok){
+      document.getElementById('ocrStatus').textContent = 'OCR...';
+      try{
+        const result = await window.Tesseract.recognize(ingredientImg.src, 'jpn+eng');
+        text = result?.data?.text || '';
+      }catch(e){}
+    }
+  }
+  if(!text){ document.getElementById('ocrStatus').textContent = t('ocrNeedManual'); document.getElementById('ocrResultBox').textContent=''; document.getElementById('uploadedCompareBox').innerHTML=''; return; }
+  const ingredients = normalizeOCRIngredients(text);
+  state.currentUploadedProduct = {
+    id:'up_'+Date.now(),
+    status:'draft',
+    domain: document.getElementById('domainSelect').value,
+    subcategory: document.getElementById('subcategorySelect').value,
+    name: document.getElementById('uploadProductName').value.trim() || 'OCR比較製品',
+    brand: document.getElementById('uploadBrandName').value.trim() || '',
+    ingredients,
+    overallImage: document.getElementById('overallPreview').src || '',
+    ingredientImage: document.getElementById('ingredientPreview').src || '',
+    adText:'', storyBadge:'', storyText:'', mongoliaIngredients:[], createdAt:Date.now(), views:0
+  };
+  document.getElementById('ocrStatus').textContent = t('ocrDone');
+  document.getElementById('ocrResultBox').innerHTML = ingredients.map(v=>`<span class="tag">${escapeHtml(v)}</span>`).join('');
+  renderUploadedCompare();
+}
+function renderUploadedCompare(){
+  const box = document.getElementById('uploadedCompareBox');
+  if(!state.currentUploadedProduct || !state.currentFormula){ box.innerHTML=''; return; }
+  const cmp = compareAgainstIdeal(state.currentUploadedProduct);
+  box.innerHTML = `<div class="product" onclick="openCompareUploaded()"><div class="product-head"><div><div><span class="tag">${domainLabel(state.currentUploadedProduct.domain)}</span><span class="tag">${escapeHtml(subcategoryLabel(state.currentUploadedProduct.subcategory||''))}</span></div><h3 style="margin-top:8px">${escapeHtml(state.currentUploadedProduct.name)}</h3><div style="margin-top:8px">${cmp.overlap.map(v=>`<span class="tag good">${escapeHtml(ingredientDisplayName(v))}</span>`).join('')}</div><div class="mini-note">${t('comparePromo')}</div></div></div></div>`;
+}
+function openCompareUploaded(){
+  if(!state.currentUploadedProduct || !state.currentFormula) return;
+  const cmp = compareAgainstIdeal(state.currentUploadedProduct); const metrics = calcMetrics(analyzeIngredientNames(state.currentUploadedProduct.ingredients), state.currentUploadedProduct.domain);
+  const body = `<div class="compare-columns">${buildComparePanel((state.lang==='en'?'Ideal Design':state.lang==='zh'?'理想设计':'理想設計'), state.currentFormula.ingredients, state.currentFormula.metrics, state.currentUploadedProduct.ingredients)}${buildComparePanel(state.currentUploadedProduct.name, state.currentUploadedProduct.ingredients, metrics, state.currentFormula.ingredients)}</div><div class="result" style="margin-top:16px"><b>${t('comparisonComments')}</b><ul><li>${cmp.overlap.map(ingredientDisplayName).join('、')||'-'}</li><li>${cmp.missing.map(ingredientDisplayName).join('、')||'-'}</li><li>${cmp.extra.map(ingredientDisplayName).join('、')||'-'}</li></ul><div class="story-strip">${t('storyLine')}</div></div>`;
+  openModal(`${state.currentUploadedProduct.name} ${t('andCompare')}`, body, `${state.currentUploadedProduct.name}\n${state.currentUploadedProduct.ingredients.join('、')}`);
+}
+function saveUploadedProduct(){ if(!state.currentUploadedProduct){ alert(t('analyze')); return; } state.importedProducts.push({...clone(state.currentUploadedProduct), id:'imp_'+Date.now()}); persistAll(); renderAdminPage(); alert(t('saveUploaded')); }
+
+async function ensureXLSX(){ return await ensureScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','XLSX'); }
+function readExcelFile(inputId, callback){
+  const file = document.getElementById(inputId).files[0]; if(!file){ alert(t('chooseFile')); return; }
+  ensureXLSX().then(ok=>{ if(!ok){ alert('XLSX library failed to load'); return; }
+    const reader = new FileReader(); reader.onload = e=>{ const wb = window.XLSX.read(e.target.result,{type:'array'}); const rows = window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''}); callback(rows); }; reader.readAsArrayBuffer(file);
+  });
+}
+function importProductsExcel(){
+  readExcelFile('productExcelInput', rows=>{
+    state.products = rows.map((r,i)=>({
+      id:String(r.id || ('excel_p_'+Date.now()+'_'+i)),
+      domain:String(r.domain || 'cosmetics'),
+      subcategory:String(r.subcategory || (String(r.domain||'cosmetics')==='health'?'capsule':'serum')),
+      name:String(r.name || ('Product '+(i+1))),
+      brand:String(r.brand || ''),
+      ingredients:String(r.ingredients || '').split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+      adText:String(r.adText || ''),
+      adUrl:String(r.adUrl || '#'),
+      overallImage:String(r.overallImage || ''),
+      ingredientImage:String(r.ingredientImage || ''),
+      storyBadge:String(r.storyBadge || ''),
+      storyText:String(r.storyText || ''),
+      mongoliaIngredients:String(r.mongoliaIngredients || '').split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+      createdAt:Number(r.createdAt || Date.now()-i*1000),
+      views:Number(r.views || 0)
+    }));
+    persistAll(); renderCatalogPage(); renderRankingPage(); renderIdealComparisons(); document.getElementById('excelImportStatus').textContent = state.lang==='en' ? `Imported ${state.products.length} products` : state.lang==='zh' ? `已导入 ${state.products.length} 个产品` : `${state.products.length} 件の製品を取り込みました`;
+  });
+}
+function importIngredientsExcel(){
+  readExcelFile('ingredientExcelInput', rows=>{
+    const next={};
+    rows.forEach((r,i)=>{
+      const name = String(r.name || '').trim(); if(!name) return;
+      next[name] = {
+        domain:String(r.domain || 'cosmetics'),
+        tags:String(r.tags || '').split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+        role:String(r.role || ''),
+        short:String(r.short || ''),
+        detail:String(r.detail || ''),
+        merits:String(r.merits || '').split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+        cautions:String(r.cautions || '').split(/[、,]+/).map(v=>v.trim()).filter(Boolean),
+        dimensions:{
+          moisture:Number(r.moisture || 0), barrier:Number(r.barrier || 0), brightening:Number(r.brightening || 0), firmness:Number(r.firmness || 0), soothing:Number(r.soothing || 0),
+          energy:Number(r.energy || 0), rest:Number(r.rest || 0), beauty:Number(r.beauty || 0), gut:Number(r.gut || 0), balance:Number(r.balance || 0)
+        },
+        mongolia: String(r.mongolia || '').toLowerCase()==='true' || String(r.mongolia || '')==='1' || String(r.mongolia || '').includes('TRUE'),
+        createdAt:Number(r.createdAt || Date.now()-i*1000), views:Number(r.views || 0)
+      };
+    });
+    state.ingredients = next; persistAll(); renderIngredientPage(); renderMongoliaPage(); renderRankingPage(); renderRecommendedIngredients(); document.getElementById('excelImportStatus').textContent = state.lang==='en' ? `Imported ${Object.keys(state.ingredients).length} ingredients` : state.lang==='zh' ? `已导入 ${Object.keys(state.ingredients).length} 个成分` : `${Object.keys(state.ingredients).length} 件の成分を取り込みました`;
+  });
+}
+function importOcrCorrectionsExcel(){
+  readExcelFile('ocrExcelInput', rows=>{
+    state.ocrRules = rows.map(r=>({wrong:String(r.wrong || '').trim(), correct:String(r.correct || '')})).filter(v=>v.wrong);
+    persistAll(); document.getElementById('excelImportStatus').textContent = state.lang==='en' ? `Imported ${state.ocrRules.length} OCR rules` : state.lang==='zh' ? `已导入 ${state.ocrRules.length} 条OCR规则` : `${state.ocrRules.length} 件のOCR補正ルールを取り込みました`;
+  });
+}
+function exportRowsAsWorkbook(rows, sheetName, filename){
+  ensureXLSX().then(ok=>{ if(!ok){ alert('XLSX library failed to load'); return; } const ws = window.XLSX.utils.json_to_sheet(rows); const wb = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(wb, ws, sheetName); window.XLSX.writeFile(wb, filename); });
+}
+function exportProductsTemplate(){ exportRowsAsWorkbook([{id:'p1',domain:'cosmetics',subcategory:'serum',name:'製品名',brand:'ブランド名',ingredients:'成分A、成分B',adText:'紹介文',adUrl:'#',overallImage:'',ingredientImage:'',storyBadge:'',storyText:'',mongoliaIngredients:'ウマプラセンタエキス',createdAt:Date.now(),views:0}], 'products', 'products_template.xlsx');}
+function exportIngredientsTemplate(){ exportRowsAsWorkbook([{name:'成分名',domain:'cosmetics',tags:'保湿、整肌',role:'主役',short:'概要',detail:'詳細',merits:'メリット1、メリット2',cautions:'注意1、注意2',moisture:10,barrier:10,brightening:0,firmness:0,soothing:0,energy:0,rest:0,beauty:0,gut:0,balance:0,mongolia:'FALSE',createdAt:Date.now(),views:0}], 'ingredients', 'ingredients_template.xlsx');}
+function exportOcrTemplate(){ exportRowsAsWorkbook([{wrong:'ヒアル口ン酸Na',correct:'ヒアルロン酸Na'}], 'ocr', 'ocr_corrections_template.xlsx');}
+
+function renderEmptyBuilder(){ document.getElementById('recommendedIngredients').innerHTML='<div class="result">-</div>'; document.getElementById('formulaSummary').innerHTML=''; document.getElementById('barGraphArea').innerHTML=''; document.getElementById('idealCompareBox').innerHTML=`<div class="result">${t('noCompare')}</div>`; document.getElementById('ocrResultBox').textContent=''; document.getElementById('ocrStatus').textContent=t('ocrNeedManual'); document.getElementById('uploadedCompareBox').innerHTML=''; document.getElementById('diagnosisResult').textContent=''; }
+function resetBuilder(){ state.currentDiagnosis=null; state.recommendedIngredients=[]; state.selectedIngredients=[]; state.currentFormula=null; state.currentUploadedProduct=null; state.selectedAvoids=[]; renderAvoidPills(); renderQuestionArea(); renderEmptyBuilder(); }
+
+function renderAll(){
+  applyStaticTranslations();
+  populateSelects();
+  renderQuestionArea();
+  renderAvoidPills();
+  renderCatalogPage();
+  renderIngredientPage();
+  renderRankingPage();
+  renderMongoliaPage();
+  renderAdminPage();
+  if(state.currentFormula) refreshFormulaOutputs(); else renderEmptyBuilder();
+}
+
+function init(){
+  ensureSeedData();
+  applyStaticTranslations();
+  populateSelects();
+  state.selectedAvoids = [];
+  renderQuestionArea();
+  renderAvoidPills();
+  renderEmptyBuilder();
+  bindImageInputs();
+  renderCatalogPage();
+  renderIngredientPage();
+  renderRankingPage();
+  renderMongoliaPage();
+  document.getElementById('domainSelect').addEventListener('change', ()=>{ populateCategorySelect('domainSelect','subcategorySelect', true); renderQuestionArea(); renderAvoidPills(); resetBuilder(); });
+  document.getElementById('catalogDomainFilter').addEventListener('change', ()=>{ populateCategorySelect('catalogDomainFilter','catalogSubcategoryFilter', false); renderCatalogPage(); });
+  ['catalogSubcategoryFilter','catalogSort','catalogPeriod','catalogBadgeFilter'].forEach(id=>document.getElementById(id).addEventListener('change', renderCatalogPage));
+  ['ingredientDomainFilter','ingredientSort','ingredientPeriod'].forEach(id=>document.getElementById(id).addEventListener('change', renderIngredientPage));
+  ['rankingDomainFilter','rankingSort','rankingPeriod'].forEach(id=>document.getElementById(id).addEventListener('change', renderRankingPage));
+  document.getElementById('pageTitle').addEventListener('dblclick', showAdminAccess);
+  window.addEventListener('keydown', e=>{ if(e.ctrlKey && e.shiftKey && String(e.key).toLowerCase()==='a'){ e.preventDefault(); showAdminAccess(); }});
+  document.getElementById('modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+}
+
+init();
+</script>
+</body>
+</html>
