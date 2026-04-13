@@ -55,16 +55,15 @@ export default async function IngredientsPage({
   ].sort();
 
   const scoreLabels: Record<string, string> = {
-    moisture: "保湿",
-    barrier: "バリア",
-    brightening: "透明感",
-    firmness: "ハリ",
-    soothing: "整肌",
-    beauty: "美容",
-    rest: "休息",
-    gut: "腸活",
-    vitality: "活力",
-    circulation: "巡り",
+    moisture: "保湿", barrier: "バリア", brightening: "透明感", firmness: "ハリ", soothing: "鎮静",
+    beauty: "美容", rest: "休息", gut: "腸活", vitality: "活力", circulation: "血行",
+    antiWrinkle: "抗シワ", antiAcne: "抗ニキビ", antiInflammation: "抗炎症", astringent: "収れん",
+    turnover: "ターンオーバー", antiSpots: "抗シミ", deodorant: "消臭", antiAging: "アンチエイジング",
+    health: "健康", antiFatigue: "抗疲労", concentration: "集中力", immunity: "免疫",
+    antiObesity: "抗肥満", cognitive: "認知機能", joint: "関節", muscle: "筋肉",
+    menopause: "更年期", menstrual: "月経", fertility: "妊活", maleHealth: "男性力",
+    liver: "肝機能", antioxidant: "抗酸化", skinIrritation: "肌刺激性", hairGrowth: "育毛",
+    antibacterial: "抗菌",
   };
 
   return (
@@ -130,7 +129,9 @@ export default async function IngredientsPage({
                           ? "化粧品"
                           : ing.domain === "healthfood"
                           ? "健康食品"
-                          : "両方"}
+                          : ing.domain === "quasidrug"
+                          ? "医薬部外品"
+                          : ing.domain}
                       </span>
                     </td>
                     <td className="px-4 py-3">

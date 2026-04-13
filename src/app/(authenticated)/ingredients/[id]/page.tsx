@@ -2,20 +2,42 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-const cosmeticScores = [
+const allScores = [
   { key: "moisture", label: "保湿", color: "bg-blue-500" },
   { key: "barrier", label: "バリア", color: "bg-teal-500" },
   { key: "brightening", label: "透明感", color: "bg-yellow-500" },
   { key: "firmness", label: "ハリ", color: "bg-orange-500" },
-  { key: "soothing", label: "整肌", color: "bg-green-500" },
-];
-
-const healthScores = [
+  { key: "soothing", label: "鎮静", color: "bg-green-500" },
   { key: "beauty", label: "美容", color: "bg-pink-500" },
   { key: "rest", label: "休息", color: "bg-indigo-500" },
   { key: "gut", label: "腸活", color: "bg-lime-500" },
   { key: "vitality", label: "活力", color: "bg-red-500" },
-  { key: "circulation", label: "巡り", color: "bg-purple-500" },
+  { key: "circulation", label: "血行", color: "bg-purple-500" },
+  { key: "antiWrinkle", label: "抗シワ", color: "bg-rose-500" },
+  { key: "antiAcne", label: "抗ニキビ", color: "bg-amber-500" },
+  { key: "antiInflammation", label: "抗炎症", color: "bg-emerald-500" },
+  { key: "astringent", label: "収れん", color: "bg-cyan-500" },
+  { key: "turnover", label: "ターンオーバー", color: "bg-sky-500" },
+  { key: "antiSpots", label: "抗シミ", color: "bg-fuchsia-500" },
+  { key: "deodorant", label: "消臭", color: "bg-slate-500" },
+  { key: "antiAging", label: "アンチエイジング", color: "bg-violet-500" },
+  { key: "health", label: "健康", color: "bg-green-600" },
+  { key: "antiFatigue", label: "抗疲労", color: "bg-blue-600" },
+  { key: "concentration", label: "集中力", color: "bg-indigo-600" },
+  { key: "immunity", label: "免疫", color: "bg-teal-600" },
+  { key: "antiObesity", label: "抗肥満", color: "bg-orange-600" },
+  { key: "cognitive", label: "認知機能", color: "bg-purple-600" },
+  { key: "joint", label: "関節", color: "bg-yellow-600" },
+  { key: "muscle", label: "筋肉", color: "bg-red-600" },
+  { key: "menopause", label: "更年期", color: "bg-pink-600" },
+  { key: "menstrual", label: "月経", color: "bg-rose-600" },
+  { key: "fertility", label: "妊活", color: "bg-amber-600" },
+  { key: "maleHealth", label: "男性力", color: "bg-blue-700" },
+  { key: "liver", label: "肝機能", color: "bg-emerald-600" },
+  { key: "antioxidant", label: "抗酸化", color: "bg-lime-600" },
+  { key: "skinIrritation", label: "肌刺激性", color: "bg-red-700" },
+  { key: "hairGrowth", label: "育毛", color: "bg-stone-500" },
+  { key: "antibacterial", label: "抗菌", color: "bg-cyan-600" },
 ];
 
 export default async function IngredientDetailPage({
@@ -28,9 +50,11 @@ export default async function IngredientDetailPage({
 
   if (!ingredient) notFound();
 
-  const scores =
-    ingredient.domain === "healthfood" ? healthScores : cosmeticScores;
-  const maxScore = 40;
+  // スコアが0より大きいものだけ表示
+  const scores = allScores.filter(
+    ({ key }) => (ingredient[key as keyof typeof ingredient] as number) > 0
+  );
+  const maxScore = 10;
 
   return (
     <div>
@@ -57,10 +81,12 @@ export default async function IngredientDetailPage({
               className={`text-sm px-3 py-1 rounded-full ${
                 ingredient.domain === "cosmetics"
                   ? "bg-pink-50 text-pink-700"
+                  : ingredient.domain === "quasidrug"
+                  ? "bg-orange-50 text-orange-700"
                   : "bg-green-50 text-green-700"
               }`}
             >
-              {ingredient.domain === "cosmetics" ? "化粧品" : "健康食品"}
+              {ingredient.domain === "cosmetics" ? "化粧品" : ingredient.domain === "healthfood" ? "健康食品" : ingredient.domain === "quasidrug" ? "医薬部外品" : ingredient.domain}
             </span>
             {ingredient.role && (
               <span className="text-sm px-3 py-1 rounded-full bg-blue-50 text-blue-700">

@@ -50,25 +50,54 @@ model Ingredient {
 
   // 分類・役割
   tags      String?  // 機能タグ（「、」区切り）
-  role      String?  // 主役 / 補助 / 基盤
+  role      String?  // 役割
   short     String?  // 短い説明文
   detail    String?  // 詳しい説明文
+  detailEn  String?  // 英語版詳細
+  detailZh  String?  // 中国語版詳細
   merits    String?  // メリット（「、」区切り）
   cautions  String?  // 注意点（「、」区切り）
+  notes     String?  // 注記
+  sourceUrl String?  // Source URL(s)
 
-  // 化粧品スコア (0-40)
+  // 基本スコア (0-10)
   moisture    Int @default(0) // 保湿
   barrier     Int @default(0) // バリア
   brightening Int @default(0) // 透明感
   firmness    Int @default(0) // ハリ
-  soothing    Int @default(0) // 整肌
-
-  // 健康食品スコア (0-40)
+  soothing    Int @default(0) // 鎮静
   beauty      Int @default(0) // 美容
   rest        Int @default(0) // 休息
   gut         Int @default(0) // 腸活
   vitality    Int @default(0) // 活力
-  circulation Int @default(0) // 巡り
+  circulation Int @default(0) // 血行
+
+  // 拡張スコア (0-10)
+  antiWrinkle      Int @default(0) // 抗シワ
+  antiAcne         Int @default(0) // 抗ニキビ
+  antiInflammation Int @default(0) // 抗炎症
+  astringent       Int @default(0) // 収れん
+  turnover         Int @default(0) // ターンオーバー
+  antiSpots        Int @default(0) // 抗シミ
+  deodorant        Int @default(0) // 消臭
+  antiAging        Int @default(0) // アンチエイジング
+  health           Int @default(0) // 健康
+  antiFatigue      Int @default(0) // 抗疲労
+  concentration    Int @default(0) // 集中力
+  immunity         Int @default(0) // 免疫
+  antiObesity      Int @default(0) // 抗肥満
+  cognitive        Int @default(0) // 認知機能
+  joint            Int @default(0) // 関節
+  muscle           Int @default(0) // 筋肉
+  menopause        Int @default(0) // 更年期サポート
+  menstrual        Int @default(0) // 月経サポート
+  fertility        Int @default(0) // 妊活
+  maleHealth       Int @default(0) // 男性力
+  liver            Int @default(0) // 肝機能サポート
+  antioxidant      Int @default(0) // 抗酸化
+  skinIrritation   Int @default(0) // 肌刺激性
+  hairGrowth       Int @default(0) // 育毛
+  antibacterial    Int @default(0) // 抗菌
 
   // メタデータ
   createdAt DateTime @default(now())
