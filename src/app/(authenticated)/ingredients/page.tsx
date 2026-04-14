@@ -39,7 +39,6 @@ export default async function IngredientsPage({
 
   const totalPages = Math.ceil(total / perPage);
 
-  // Get unique tags for filter
   const allTags = await prisma.ingredient.findMany({
     where: { tags: { not: null } },
     select: { tags: true },
@@ -68,96 +67,89 @@ export default async function IngredientsPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">成分データベース</h1>
-        <span className="text-sm text-gray-500">{total.toLocaleString()} 件</span>
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">成分データベース</h2>
+          <span className="text-sm" style={{ color: "var(--muted)" }}>{total.toLocaleString()} 件</span>
+        </div>
+
+        <IngredientSearch
+          currentQuery={q}
+          currentDomain={domain}
+          currentTag={tag}
+          tags={uniqueTags}
+        />
       </div>
 
-      <IngredientSearch
-        currentQuery={q}
-        currentDomain={domain}
-        currentTag={tag}
-        tags={uniqueTags}
-      />
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-4">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">名称</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">INCI</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">区分</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">タグ</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">役割</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">スコア</th>
+      <div className="card">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid var(--line)" }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>名称</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>INCI</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>区分</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>タグ</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>役割</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>スコア</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {ingredients.map((ing) => {
                 const scores = Object.entries(scoreLabels)
                   .map(([key, label]) => ({
                     label,
                     value: ing[key as keyof typeof ing] as number,
                   }))
-                  .filter((s) => s.value > 0);
+                  .filter((s) => s.value > 0)
+                  .sort((a, b) => b.value - a.value);
+
+                const domainLabel = ing.domain === "cosmetics" ? "化粧品"
+                  : ing.domain === "healthfood" ? "健康食品"
+                  : ing.domain === "quasidrug" ? "医薬部外品"
+                  : ing.domain;
 
                 return (
-                  <tr key={ing.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3">
+                  <tr key={ing.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                    <td style={{ padding: "12px 16px" }}>
                       <Link
                         href={`/ingredients/${ing.id}`}
-                        className="text-blue-600 hover:underline font-medium"
+                        className="font-bold hover:underline"
+                        style={{ color: "var(--primary)" }}
                       >
                         {ing.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td style={{ padding: "12px 16px", color: "var(--muted)", fontSize: 12 }}>
                       {ing.inci || "-"}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          ing.domain === "cosmetics"
-                            ? "bg-pink-50 text-pink-700"
-                            : ing.domain === "healthfood"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-gray-50 text-gray-700"
-                        }`}
-                      >
-                        {ing.domain === "cosmetics"
-                          ? "化粧品"
-                          : ing.domain === "healthfood"
-                          ? "健康食品"
-                          : ing.domain === "quasidrug"
-                          ? "医薬部外品"
-                          : ing.domain}
+                    <td style={{ padding: "12px 16px" }}>
+                      <span className={`tag ${ing.domain === "cosmetics" ? "" : ing.domain === "healthfood" ? "good" : ""}`}>
+                        {domainLabel}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: "12px 16px" }}>
                       <div className="flex gap-1 flex-wrap">
                         {ing.tags
                           ?.split("、")
                           .slice(0, 3)
                           .map((t) => (
-                            <span
-                              key={t}
-                              className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded"
-                            >
+                            <span key={t} className="tag" style={{ margin: 0 }}>
                               {t.trim()}
                             </span>
                           ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>
                       {ing.role || "-"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: "12px 16px" }}>
                       <div className="flex gap-1 flex-wrap">
                         {scores.slice(0, 3).map((s) => (
                           <span
                             key={s.label}
-                            className="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded"
+                            className="tag good"
+                            style={{ margin: 0 }}
                           >
                             {s.label}:{s.value}
                           </span>
@@ -173,25 +165,22 @@ export default async function IngredientsPage({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
+        <div className="flex justify-center gap-2 mt-4">
           {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
             const p = i + 1;
             return (
               <Link
                 key={p}
                 href={`/ingredients?q=${q}&domain=${domain}&tag=${tag}&page=${p}`}
-                className={`px-3 py-1.5 rounded text-sm ${
-                  p === page
-                    ? "bg-blue-600 text-white"
-                    : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`btn ${p === page ? "active" : ""}`}
+                style={{ padding: "8px 14px", minHeight: "36px", fontSize: "13px" }}
               >
                 {p}
               </Link>
             );
           })}
           {totalPages > 10 && (
-            <span className="px-3 py-1.5 text-gray-400">...</span>
+            <span style={{ padding: "8px", color: "var(--muted)" }}>...</span>
           )}
         </div>
       )}

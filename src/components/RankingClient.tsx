@@ -69,42 +69,37 @@ export default function RankingClient({
     )
     .filter((i) => ((i[sortKey] as number) || 0) > 0);
 
+  const currentLabel = axes.find((a) => a.key === sortKey)?.label || sortKey;
+
   return (
     <div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-        <div className="flex gap-4 items-center flex-wrap">
-          <div className="flex gap-2">
-            {[
-              { key: "", label: "すべて" },
-              { key: "cosmetics", label: "化粧品" },
-              { key: "healthfood", label: "健康食品" },
-              { key: "quasidrug", label: "医薬部外品" },
-            ].map((d) => (
-              <button
-                key={d.key}
-                onClick={() => setDomainFilter(d.key)}
-                className={`text-sm px-4 py-1.5 rounded-full ${
-                  domainFilter === d.key
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
+      <div className="card">
+        <h2 className="text-xl font-bold mb-4">成分ランキング</h2>
+
+        <div className="flex gap-2 flex-wrap mb-4">
+          {[
+            { key: "", label: "すべて" },
+            { key: "cosmetics", label: "化粧品" },
+            { key: "healthfood", label: "健康食品" },
+            { key: "quasidrug", label: "医薬部外品" },
+          ].map((d) => (
+            <button
+              key={d.key}
+              onClick={() => setDomainFilter(d.key)}
+              className={`pill ${domainFilter === d.key ? "active" : ""}`}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
 
-        <div className="flex gap-2 flex-wrap mt-3">
+        <div className="flex gap-2 flex-wrap">
           {axes.map((axis) => (
             <button
               key={axis.key}
               onClick={() => setSortKey(axis.key)}
-              className={`text-xs px-3 py-1.5 rounded-lg ${
-                sortKey === axis.key
-                  ? "bg-blue-100 text-blue-700 font-medium"
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100"
-              }`}
+              className={`btn ${sortKey === axis.key ? "active" : ""}`}
+              style={{ padding: "8px 12px", minHeight: "36px", fontSize: "12px" }}
             >
               {axis.label}
             </button>
@@ -112,57 +107,62 @@ export default function RankingClient({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="divide-y divide-gray-100">
+      <div className="card">
+        <h3 className="text-sm font-bold mb-3">{currentLabel} ランキング Top50</h3>
+        <div className="space-y-2">
           {sorted.slice(0, 50).map((ing, i) => {
             const value = (ing[sortKey] as number) || 0;
             return (
               <div
                 key={ing.id}
-                className="flex items-center gap-4 p-4 hover:bg-gray-50 transition"
+                className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
+                style={{ border: "1px solid var(--line)" }}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    i < 3
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
+                  className="flex items-center justify-center font-bold text-sm"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: i < 3 ? "#fef3c7" : "#f3f4f6",
+                    color: i < 3 ? "#b45309" : "#6b7280",
+                  }}
                 >
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/ingredients/${ing.id}`}
-                    className="font-medium text-blue-600 hover:underline"
+                    className="font-bold hover:underline"
+                    style={{ color: "var(--primary)" }}
                   >
                     {ing.name}
                   </Link>
                   {ing.short && (
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    <p className="text-xs mt-0.5 truncate" style={{ color: "var(--muted)" }}>
                       {ing.short}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 w-48">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full"
-                      style={{ width: `${(value / 10) * 100}%` }}
-                    />
+                <div style={{ width: 200 }}>
+                  <div className="scorebar" style={{ marginTop: 0 }}>
+                    <div className="scorebar-outer">
+                      <div
+                        className="scorebar-inner"
+                        style={{ width: `${(value / 10) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-gray-700 w-8 text-right">
-                    {value}
-                  </span>
                 </div>
+                <span className="font-bold text-sm" style={{ width: 32, textAlign: "right", color: "var(--primary)" }}>
+                  {value}
+                </span>
                 <div className="flex gap-1">
                   {ing.tags
                     ?.split("、")
                     .slice(0, 2)
                     .map((t) => (
-                      <span
-                        key={t}
-                        className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded"
-                      >
+                      <span key={t} className="tag" style={{ margin: 0 }}>
                         {t.trim()}
                       </span>
                     ))}
@@ -170,6 +170,11 @@ export default function RankingClient({
               </div>
             );
           })}
+          {sorted.length === 0 && (
+            <div className="result text-center text-gray-400">
+              該当する成分がありません
+            </div>
+          )}
         </div>
       </div>
     </div>

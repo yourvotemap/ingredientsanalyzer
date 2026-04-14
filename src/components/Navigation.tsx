@@ -4,61 +4,67 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/", label: "ダッシュボード", icon: "📊" },
-  { href: "/ingredients", label: "成分データベース", icon: "🧪" },
-  { href: "/catalog", label: "カタログ", icon: "📦" },
-  { href: "/ranking", label: "ランキング", icon: "🏆" },
-  { href: "/builder", label: "ビルダー", icon: "⚙️" },
-  { href: "/admin", label: "管理", icon: "🔧" },
+  { href: "/builder", label: "理想設計", dataPage: "builder" },
+  { href: "/catalog", label: "おすすめ製品", dataPage: "catalog" },
+  { href: "/ingredients", label: "成分一覧", dataPage: "ingredients" },
+  { href: "/ranking", label: "ランキング", dataPage: "ranking" },
+  { href: "/mongolia", label: "モンゴル産特集", dataPage: "mongolia" },
 ];
 
 export default function Navigation({ userName }: { userName?: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-blue-600 text-lg mr-4">
-              成分分析ツール
-            </span>
-            {tabs.map((tab) => {
-              const isActive =
-                tab.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(tab.href);
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  }`}
-                >
-                  <span className="mr-1">{tab.icon}</span>
-                  {tab.label}
-                </Link>
-              );
-            })}
+    <header className="sticky top-0 z-20" style={{ background: "rgba(245,247,251,.96)", backdropFilter: "blur(8px)" }}>
+      <div className="max-w-[1360px] mx-auto px-6 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 m-0">Beauty & Health 成分分析</h1>
+            <p className="text-sm text-gray-500 mt-1">成分データで製品の実力を可視化</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {userName && (
               <span className="text-sm text-gray-600">{userName}</span>
             )}
+            <Link
+              href="/admin"
+              className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-white text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition"
+            >
+              管理画面
+            </Link>
             <form action="/api/auth/signout" method="POST">
               <button
                 type="submit"
-                className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+                className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-500 text-sm font-bold hover:bg-red-50 hover:text-red-600 transition"
               >
                 ログアウト
               </button>
             </form>
           </div>
         </div>
+
+        <nav className="flex gap-2.5 flex-wrap">
+          {tabs.map((tab) => {
+            const isActive =
+              tab.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(tab.href);
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`px-4 py-3 rounded-xl text-sm font-bold transition-all border ${
+                  isActive
+                    ? "bg-[#2563eb] border-[#2563eb] text-white shadow-md"
+                    : "bg-[#eef2ff] border-[#c7d2fe] text-[#1d4ed8] hover:bg-[#dbeafe]"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }

@@ -11,9 +11,13 @@ export default async function AuthenticatedLayout({
   if (!session) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: "#f5f7fb" }}>
       <Navigation userName={session.user?.name || session.user?.email || ""} />
-      <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <div className="flex">
+        <main className="flex-1 max-w-[1360px] mx-auto px-6 py-4">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
