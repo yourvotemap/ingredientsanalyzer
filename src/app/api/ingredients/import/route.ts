@@ -99,6 +99,8 @@ function hasJapaneseHeaders(row: Record<string, unknown>): boolean {
   return Object.keys(row).some((key) => HEADER_MAP[key.trim()] !== undefined);
 }
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session || (session.user as { role?: string })?.role !== "admin") {
@@ -152,31 +154,26 @@ export async function POST(request: NextRequest) {
     // 最初の行で日本語ヘッダーか判定
     const useJapanese = rows.length > 0 && hasJapaneseHeaders(rows[0]);
 
-    for (const rawRow of rows) {
+    // 既存成分を一括取得（name→idマップ）
+    const existingAll = await prisma.ingredient.findMany({ select: { id: true, name: true } });
+    const nameToId = new Map(existingAll.map((e) => [e.name, e.id]));
+
+    // バッチ処理（10件ずつトランザクション）
+    const BATCH = 10;
+    const parsed = rows.map((rawRow) => {
       const row = useJapanese ? normalizeRow(rawRow) : rawRow;
       const name = String(row["name"] || "").trim();
-      if (!name) {
-        failed++;
-        continue;
+      if (!name) return null;
+      const domainRaw = String(row["domain"] || "cosmetics").trim();
+      const domain = DOMAIN_MAP[domainRaw] || domainRaw;
+      const scores: Record<string, number> = {};
+      for (const field of SCORE_FIELDS) {
+        scores[field] = Number(row[field]) || 0;
       }
-
-      try {
-        const existing = await prisma.ingredient.findFirst({
-          where: { name },
-        });
-
-        const domainRaw = String(row["domain"] || "cosmetics").trim();
-        const domain = DOMAIN_MAP[domainRaw] || domainRaw;
-
-        // スコアフィールドを動的に構築
-        const scores: Record<string, number> = {};
-        for (const field of SCORE_FIELDS) {
-          scores[field] = Number(row[field]) || 0;
-        }
-
-        const data = {
-          domain,
-          name,
+      return {
+        name,
+        data: {
+          domain, name,
           inci: row["inci"] ? String(row["inci"]) : null,
           english: row["english"] ? String(row["english"]) : null,
           nameEn: row["name_en"] ? String(row["name_en"]) : (row["nameEn"] ? String(row["nameEn"]) : null),
@@ -193,19 +190,26 @@ export async function POST(request: NextRequest) {
           notes: row["notes"] ? String(row["notes"]) : null,
           sourceUrl: row["sourceUrl"] ? String(row["sourceUrl"]) : null,
           ...scores,
-        };
+        },
+      };
+    });
 
-        if (existing) {
-          await prisma.ingredient.update({
-            where: { id: existing.id },
-            data,
-          });
+    for (let i = 0; i < parsed.length; i += BATCH) {
+      const batch = parsed.slice(i, i + BATCH);
+      const ops = batch.map((item) => {
+        if (!item) { failed++; return null; }
+        const existingId = nameToId.get(item.name);
+        if (existingId) {
+          return prisma.ingredient.update({ where: { id: existingId }, data: item.data });
         } else {
-          await prisma.ingredient.create({ data });
+          return prisma.ingredient.create({ data: item.data });
         }
-        succeeded++;
+      }).filter(Boolean);
+      try {
+        await prisma.$transaction(ops as never[]);
+        succeeded += ops.length;
       } catch {
-        failed++;
+        failed += batch.length;
       }
     }
 

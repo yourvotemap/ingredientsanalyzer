@@ -80,7 +80,7 @@ export default function BuilderClient({
           const weight = weights[axis.key] / 100;
           score += val * weight;
         }
-        return { ...ing, score };
+        return { ...ing, score } as Ingredient & { score: number };
       })
       .sort((a, b) => b.score - a.score)
       .filter((i) => i.score > 0);
@@ -96,7 +96,7 @@ export default function BuilderClient({
       let maxKey = axes[0].key;
       let maxVal = 0;
       for (const axis of axes) {
-        const val = (ing[axis.key] as number) || 0;
+        const val = ((ing as Record<string, unknown>)[axis.key] as number) || 0;
         if (val > maxVal) {
           maxVal = val;
           maxKey = axis.key;
