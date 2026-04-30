@@ -9,6 +9,8 @@ type Ingredient = Record<string, unknown> & {
   tags: string | null;
   role: string | null;
   short: string | null;
+  usageCount: number;
+  baseIngredient: string | null;
 };
 
 const cosmeticAxes = [
@@ -82,7 +84,8 @@ export default function BuilderClient({
         }
         return { ...ing, score } as Ingredient & { score: number };
       })
-      .sort((a, b) => b.score - a.score)
+      // 機能スコアが同じ場合は使用頻度（usageCount）が多い成分を優先
+      .sort((a, b) => b.score - a.score || b.usageCount - a.usageCount)
       .filter((i) => i.score > 0);
   }, [filteredIngredients, weights, axes]);
 
@@ -251,6 +254,16 @@ export default function BuilderClient({
                         <div className="font-bold">{ing.name}</div>
                         <div className="text-xs" style={{ color: "#6b7280", marginTop: "2px" }}>
                           {axis.label}: {(ing[axis.key] as number) || 0}
+                          {ing.baseIngredient && (
+                            <span style={{ marginLeft: "6px", color: "#9ca3af" }}>
+                              [{ing.baseIngredient}]
+                            </span>
+                          )}
+                          {ing.usageCount > 0 && domain === "cosmetics" && (
+                            <span style={{ marginLeft: "6px", color: "#9ca3af" }}>
+                              {ing.usageCount}製品
+                            </span>
+                          )}
                         </div>
                       </button>
                     ))}

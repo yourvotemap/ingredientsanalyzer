@@ -6,6 +6,8 @@ import * as XLSX from "xlsx";
 // 日本語ヘッダー → 英語フィールドマッピング
 const HEADER_MAP: Record<string, string> = {
   "成分名（日本語）": "name",
+  "使用頻度": "usageCount",
+  "大本の素材": "baseIngredient",
   "INCI": "inci",
   "英語名": "english",
   "中国語名": "nameZh",
@@ -189,6 +191,8 @@ export async function POST(request: NextRequest) {
           cautions: row["cautions"] ? String(row["cautions"]) : null,
           notes: row["notes"] ? String(row["notes"]) : null,
           sourceUrl: row["sourceUrl"] ? String(row["sourceUrl"]) : null,
+          usageCount: row["usageCount"] ? Number(row["usageCount"]) : undefined,
+          baseIngredient: row["baseIngredient"] ? String(row["baseIngredient"]) : null,
           ...scores,
         },
       };
