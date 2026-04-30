@@ -1,7 +1,10 @@
 /**
- * 機能性表示食品データ投入API
- * GitHub上のCSVを取得してDBに一括登録
- * 管理者のみ実行可
+ * 機能性表示食品データ投入API（バッチ処理版）
+ * CSV全行を集計してユニーク成分リストを作成し、
+ * offset から batchSize 件だけDBに書き込む。
+ *
+ * POST body: { offset: number, batchSize: number }
+ * Response:  { total, offset, nextOffset, done, created, updated }
  */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -10,7 +13,6 @@ import { prisma } from "@/lib/prisma";
 const CSV_URL =
   "https://raw.githubusercontent.com/yourvotemap/ingredientsanalyzer/main/beauty_health_project/%E6%A9%9F%E8%83%BD%E6%80%A7%E8%A1%A8%E7%A4%BA%E9%A3%9F%E5%93%81_%E6%A4%9C%E7%B4%A2%E7%B5%90%E6%9E%9C%E4%B8%80%E8%A6%A7.csv";
 
-// 大本の素材マッピング
 const BASE_INGREDIENT_MAP: [RegExp, string][] = [
   [/りんご|林檎|アップル|プロシアニジン/i, "りんご"],
   [/ブルーベリー|ビルベリー|アントシアニン.*ベリー/i, "ブルーベリー"],
@@ -62,7 +64,6 @@ function inferBaseIngredient(name: string): string {
   return name.replace(/[（(].*?[）)]/g, "").trim().slice(0, 20);
 }
 
-// 機能性テキスト → スコア
 const FUNCTION_SCORE_MAP: [string[], string, number][] = [
   [["腸内", "便通", "整腸", "腸内フローラ", "おなかの調子"], "gut", 20],
   [["美容", "素肌", "肌の", "潤い", "うるおい"], "beauty", 20],
@@ -80,7 +81,6 @@ const FUNCTION_SCORE_MAP: [string[], string, number][] = [
   [["血糖値", "血圧", "中性脂肪", "コレステロール"], "health", 20],
   [["更年期", "ほてり", "のぼせ"], "menopause", 20],
   [["肝機能", "肝臓", "ALT"], "liver", 20],
-  [["目の", "眼の", "視力", "ルテイン"], "beauty", 10],
 ];
 
 function inferScores(text: string): Record<string, number> {
@@ -93,7 +93,6 @@ function inferScores(text: string): Record<string, number> {
   return scores;
 }
 
-// シンプルなCSVパーサー（引用符対応）
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
@@ -104,8 +103,7 @@ function parseCsvLine(line: string): string[] {
       if (inQuote && line[i + 1] === '"') { current += '"'; i++; }
       else { inQuote = !inQuote; }
     } else if (ch === "," && !inQuote) {
-      result.push(current);
-      current = "";
+      result.push(current); current = "";
     } else {
       current += ch;
     }
@@ -114,7 +112,43 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-export const maxDuration = 300;
+// CSV を集計してユニーク成分エントリの配列を返す
+async function buildIngredientEntries(): Promise<
+  Array<{ name: string; funcText: string; count: number }>
+> {
+  const res = await fetch(CSV_URL, { next: { revalidate: 3600 } } as RequestInit);
+  if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
+  const text = await res.text();
+  const lines = text.replace(/^﻿/, "").split("\n").filter(Boolean);
+  const headers = parseCsvLine(lines[0]).map((h) => h.replace(/"/g, "").trim());
+
+  const map = new Map<string, { texts: string[]; count: number }>();
+  for (const line of lines.slice(1)) {
+    if (!line.trim()) continue;
+    const cols = parseCsvLine(line);
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = cols[i] ?? ""; });
+
+    const rawNames = row["機能性関与成分名"] || "";
+    const functionality = row["表示しようとする機能性"] || "";
+    if (!rawNames) continue;
+
+    for (const name of rawNames.split(/[\/・、，\n]/).map((s) => s.trim()).filter(Boolean)) {
+      if (!map.has(name)) map.set(name, { texts: [], count: 0 });
+      const entry = map.get(name)!;
+      if (functionality) entry.texts.push(functionality);
+      entry.count++;
+    }
+  }
+
+  return [...map.entries()].map(([name, { texts, count }]) => ({
+    name,
+    funcText: texts.join(" "),
+    count,
+  }));
+}
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -122,114 +156,68 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (msg: string) => controller.enqueue(encoder.encode(msg + "\n"));
+  const body = await request.json().catch(() => ({}));
+  const offset: number = Number(body.offset ?? 0);
+  const batchSize: number = Number(body.batchSize ?? 500);
 
-      try {
-        send("📥 GitHubからCSVを取得中（約15MB）...");
-        const res = await fetch(CSV_URL);
-        if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
-        const csvText = await res.text();
+  try {
+    const entries = await buildIngredientEntries();
+    const total = entries.length;
+    const batch = entries.slice(offset, offset + batchSize);
 
-        const lines = csvText.replace(/^﻿/, "").split("\n").filter(Boolean);
-        const headers = parseCsvLine(lines[0]).map((h) => h.replace(/"/g, "").trim());
-        send(`✅ 列確認: ${headers.slice(0, 5).join(", ")} ...`);
-        send(`📊 届出件数: ${lines.length - 1}件`);
+    const existing = await prisma.ingredient.findMany({
+      where: { domain: { in: ["healthfood", "both"] } },
+      select: { id: true, name: true },
+    });
+    const byName = new Map<string, string>(existing.map((e) => [e.name, e.id]));
 
-        // 成分ごとに集計
-        const ingredientMap = new Map<string, { texts: string[]; count: number }>();
-        for (const line of lines.slice(1)) {
-          if (!line.trim()) continue;
-          const cols = parseCsvLine(line);
-          const row: Record<string, string> = {};
-          headers.forEach((h, i) => { row[h] = cols[i] ?? ""; });
+    let created = 0, updated = 0;
+    const ops = [];
 
-          const rawNames = row["機能性関与成分名"] || "";
-          const functionality = row["表示しようとする機能性"] || "";
-          if (!rawNames) continue;
+    for (const { name, funcText, count } of batch) {
+      const dbData = {
+        domain: "healthfood",
+        name,
+        baseIngredient: inferBaseIngredient(name),
+        usageCount: count,
+        short: funcText.slice(0, 100) || null,
+        ...inferScores(funcText),
+      };
 
-          // 複数成分が「、」「/」で区切られている場合は分割
-          const names = rawNames.split(/[\/・、，\n]/).map((s) => s.trim()).filter(Boolean);
-          for (const name of names) {
-            if (!ingredientMap.has(name)) {
-              ingredientMap.set(name, { texts: [], count: 0 });
-            }
-            const entry = ingredientMap.get(name)!;
-            if (functionality) entry.texts.push(functionality);
-            entry.count++;
-          }
-        }
-        send(`🧪 ユニーク成分数: ${ingredientMap.size}件`);
-
-        // 既存レコード取得
-        const existing = await prisma.ingredient.findMany({
-          where: { domain: { in: ["healthfood", "both"] } },
-          select: { id: true, name: true, aliases: true },
-        });
-        const byName = new Map(existing.map((e) => [e.name, e.id]));
-
-        let created = 0, updated = 0;
-        const entries = [...ingredientMap.entries()];
-        const BATCH = 30;
-
-        for (let i = 0; i < entries.length; i += BATCH) {
-          const batch = entries.slice(i, i + BATCH);
-          const ops = [];
-
-          for (const [name, data] of batch) {
-            const funcText = data.texts.join(" ");
-            const scores = inferScores(funcText);
-            const baseIngredient = inferBaseIngredient(name);
-
-            const dbData = {
-              domain: "healthfood",
-              name,
-              baseIngredient,
-              usageCount: data.count,
-              short: funcText.slice(0, 100) || null,
-              ...scores,
-            };
-
-            const existingId = byName.get(name) || null;
-            if (existingId) {
-              ops.push(prisma.ingredient.update({ where: { id: existingId }, data: dbData }));
-              updated++;
-            } else {
-              ops.push(prisma.ingredient.create({ data: dbData }));
-              created++;
-            }
-          }
-
-          if (ops.length > 0) await prisma.$transaction(ops);
-          if (i % (BATCH * 10) === 0) {
-            send(`  処理済み: ${Math.min(i + BATCH, entries.length)} / ${entries.length}`);
-          }
-        }
-
-        await prisma.importLog.create({
-          data: {
-            fileName: "機能性表示食品_検索結果一覧.csv (GitHub)",
-            fileType: "ingredients",
-            status: "success",
-            rowsProcessed: lines.length - 1,
-            rowsSucceeded: created + updated,
-            rowsFailed: 0,
-            importedBy: session.user?.email || "",
-          },
-        });
-
-        send(`\n✅ 完了！`);
-        send(`  新規登録: ${created}件`);
-        send(`  更新: ${updated}件`);
-      } catch (e) {
-        send(`❌ エラー: ${e instanceof Error ? e.message : String(e)}`);
-      } finally {
-        controller.close();
+      const existingId = byName.get(name) ?? null;
+      if (existingId) {
+        ops.push(prisma.ingredient.update({ where: { id: existingId }, data: dbData }));
+        updated++;
+      } else {
+        ops.push(prisma.ingredient.create({ data: dbData }));
+        created++;
       }
-    },
-  });
+    }
 
-  return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+    if (ops.length > 0) await prisma.$transaction(ops);
+
+    const nextOffset = offset + batchSize;
+    const done = nextOffset >= total;
+
+    if (done) {
+      await prisma.importLog.create({
+        data: {
+          fileName: "機能性表示食品_検索結果一覧.csv (GitHub / batch)",
+          fileType: "ingredients",
+          status: "success",
+          rowsProcessed: total,
+          rowsSucceeded: total,
+          rowsFailed: 0,
+          importedBy: session.user?.email || "",
+        },
+      });
+    }
+
+    return NextResponse.json({ total, offset, nextOffset, done, created, updated });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
 }

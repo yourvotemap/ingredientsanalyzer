@@ -1,7 +1,10 @@
 /**
- * 化粧品成分データ投入API
- * GitHub上のCSVを取得してDBに一括登録
- * 管理者のみ実行可
+ * 化粧品成分データ投入API（バッチ処理版）
+ * 1回のリクエストで batchSize 件だけ処理して返す。
+ * クライアントが offset を増やしながら繰り返し呼ぶ。
+ *
+ * POST body: { offset: number, batchSize: number }
+ * Response:  { total, offset, nextOffset, done, created, updated, skipped }
  */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -10,7 +13,6 @@ import { prisma } from "@/lib/prisma";
 const CSV_URL =
   "https://raw.githubusercontent.com/yourvotemap/ingredientsanalyzer/main/beauty_health_project/cosmetic_ingredients.csv";
 
-// purpose → スコアマッピング
 const PURPOSE_SCORE_MAP: Array<{ patterns: RegExp[]; fields: Record<string, number> }> = [
   { patterns: [/保湿|湿潤|moistur|humectant/i], fields: { moisture: 20 } },
   { patterns: [/バリア|皮膜|エモリエント|emollient|閉塞/i], fields: { barrier: 20 } },
@@ -64,13 +66,12 @@ function inferTags(purpose: string): string {
 
 function parseUsageCount(raw: string): number {
   if (!raw) return 0;
-  const kenMatch = raw.trim().match(/^([\d,]+)[\s　]*件/);
-  if (kenMatch) return parseInt(kenMatch[1].replace(/,/g, ""), 10);
-  const num = parseInt(raw.replace(/,/g, ""), 10);
-  return isNaN(num) ? 0 : num;
+  const m = raw.trim().match(/^([\d,]+)[\s　]*件/);
+  if (m) return parseInt(m[1].replace(/,/g, ""), 10);
+  const n = parseInt(raw.replace(/,/g, ""), 10);
+  return isNaN(n) ? 0 : n;
 }
 
-// シンプルなCSVパーサー（引用符・カンマ対応）
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
@@ -81,8 +82,7 @@ function parseCsvLine(line: string): string[] {
       if (inQuote && line[i + 1] === '"') { current += '"'; i++; }
       else { inQuote = !inQuote; }
     } else if (ch === "," && !inQuote) {
-      result.push(current);
-      current = "";
+      result.push(current); current = "";
     } else {
       current += ch;
     }
@@ -91,7 +91,23 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-export const maxDuration = 300;
+// CSV をフェッチしてデータ行（ヘッダー除く）を返すユーティリティ
+let cachedLines: string[] | null = null;
+let cachedAt = 0;
+
+async function fetchDataLines(): Promise<string[]> {
+  // 同一リクエスト内でのキャッシュは不要だが、将来の拡張のために残す
+  if (cachedLines && Date.now() - cachedAt < 60_000) return cachedLines;
+  const res = await fetch(CSV_URL, { next: { revalidate: 3600 } } as RequestInit);
+  if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
+  const text = await res.text();
+  const lines = text.replace(/^﻿/, "").split("\n").filter(Boolean);
+  cachedLines = lines;
+  cachedAt = Date.now();
+  return lines;
+}
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -99,114 +115,90 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  // ストリーミングレスポンスで進捗を返す
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (msg: string) => controller.enqueue(encoder.encode(msg + "\n"));
+  const body = await request.json().catch(() => ({}));
+  const offset: number = Number(body.offset ?? 0);
+  const batchSize: number = Number(body.batchSize ?? 500);
 
-      try {
-        send("📥 GitHubからCSVを取得中...");
-        const res = await fetch(CSV_URL);
-        if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
-        const csvText = await res.text();
+  try {
+    const lines = await fetchDataLines();
+    const headers = parseCsvLine(lines[0]);
+    const dataLines = lines.slice(1);
+    const total = dataLines.length;
 
-        const lines = csvText.replace(/^﻿/, "").split("\n").filter(Boolean);
-        const headers = parseCsvLine(lines[0]);
-        send(`✅ CSVヘッダー確認: ${headers.slice(0, 5).join(", ")} ...`);
-        send(`📊 成分数: ${lines.length - 1}件`);
+    const batch = dataLines.slice(offset, offset + batchSize);
 
-        // 既存レコードをname/inciで一括取得
-        const existing = await prisma.ingredient.findMany({
-          where: { domain: { in: ["cosmetics", "both", "quasidrug"] } },
-          select: { id: true, name: true, inci: true },
-        });
-        const byName = new Map<string, string>(existing.map((e) => [e.name, e.id]));
-        const byInci = new Map<string, string>(
-          existing.filter((e) => e.inci).map((e) => [e.inci as string, e.id])
-        );
+    // 既存レコードをname/inciで取得（バッチ分だけ照合）
+    const existing = await prisma.ingredient.findMany({
+      where: { domain: { in: ["cosmetics", "both", "quasidrug"] } },
+      select: { id: true, name: true, inci: true },
+    });
+    const byName = new Map<string, string>(existing.map((e) => [e.name, e.id]));
+    const byInci = new Map<string, string>(
+      existing.filter((e) => e.inci).map((e) => [e.inci as string, e.id])
+    );
 
-        let created = 0, updated = 0, skipped = 0;
-        const BATCH = 50;
-        const dataRows = lines.slice(1);
+    let created = 0, updated = 0, skipped = 0;
+    const ops = [];
 
-        for (let i = 0; i < dataRows.length; i += BATCH) {
-          const batch = dataRows.slice(i, i + BATCH);
-          const ops = [];
+    for (const line of batch) {
+      if (!line.trim()) { skipped++; continue; }
+      const cols = parseCsvLine(line);
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { row[h] = cols[i] ?? ""; });
 
-          for (const line of batch) {
-            if (!line.trim()) continue;
-            const cols = parseCsvLine(line);
-            const row: Record<string, string> = {};
-            headers.forEach((h, idx) => { row[h] = cols[idx] ?? ""; });
+      const name = row.name_jp?.trim() || "";
+      const inci = row.name_inci?.trim() || "";
+      if (!name && !inci) { skipped++; continue; }
 
-            const name = row.name_jp?.trim() || "";
-            const inci = row.name_inci?.trim() || "";
-            if (!name && !inci) { skipped++; continue; }
+      const purpose = row.purpose || "";
+      const data = {
+        domain: "cosmetics",
+        name: name || inci,
+        inci: inci || null,
+        nameEn: inci || null,
+        english: inci || null,
+        nameZh: row.name_cn?.trim() || null,
+        detail: row.definition?.trim() || null,
+        notes: row.notes?.trim() || null,
+        tags: inferTags(purpose) || null,
+        usageCount: parseUsageCount(row.commercial_products || ""),
+        ...inferScores(purpose),
+      };
 
-            const purpose = row.purpose || "";
-            const scores = inferScores(purpose);
-            const tags = inferTags(purpose);
-            const usageCount = parseUsageCount(row.commercial_products || "");
-
-            const data = {
-              domain: "cosmetics",
-              name: name || inci,
-              inci: inci || null,
-              nameEn: inci || null,
-              english: inci || null,
-              nameZh: row.name_cn?.trim() || null,
-              detail: row.definition?.trim() || null,
-              notes: row.notes?.trim() || null,
-              tags: tags || null,
-              usageCount,
-              ...scores,
-            };
-
-            const existingId = byName.get(name) || byInci.get(inci) || null;
-            if (existingId) {
-              ops.push(prisma.ingredient.update({ where: { id: existingId }, data }));
-              updated++;
-            } else {
-              ops.push(prisma.ingredient.create({ data }));
-              created++;
-            }
-          }
-
-          if (ops.length > 0) {
-            await prisma.$transaction(ops);
-          }
-
-          if (i % (BATCH * 10) === 0) {
-            send(`  処理済み: ${Math.min(i + BATCH, dataRows.length)} / ${dataRows.length}`);
-          }
-        }
-
-        await prisma.importLog.create({
-          data: {
-            fileName: "cosmetic_ingredients.csv (GitHub)",
-            fileType: "ingredients",
-            status: "success",
-            rowsProcessed: dataRows.length,
-            rowsSucceeded: created + updated,
-            rowsFailed: skipped,
-            importedBy: session.user?.email || "",
-          },
-        });
-
-        send(`\n✅ 完了！`);
-        send(`  新規登録: ${created}件`);
-        send(`  更新: ${updated}件`);
-        send(`  スキップ: ${skipped}件`);
-      } catch (e) {
-        send(`❌ エラー: ${e instanceof Error ? e.message : String(e)}`);
-      } finally {
-        controller.close();
+      const existingId = byName.get(name) || byInci.get(inci) || null;
+      if (existingId) {
+        ops.push(prisma.ingredient.update({ where: { id: existingId }, data }));
+        updated++;
+      } else {
+        ops.push(prisma.ingredient.create({ data }));
+        created++;
       }
-    },
-  });
+    }
 
-  return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });
+    if (ops.length > 0) await prisma.$transaction(ops);
+
+    const nextOffset = offset + batchSize;
+    const done = nextOffset >= total;
+
+    if (done) {
+      await prisma.importLog.create({
+        data: {
+          fileName: "cosmetic_ingredients.csv (GitHub / batch)",
+          fileType: "ingredients",
+          status: "success",
+          rowsProcessed: total,
+          rowsSucceeded: total - skipped,
+          rowsFailed: skipped,
+          importedBy: session.user?.email || "",
+        },
+      });
+    }
+
+    return NextResponse.json({ total, offset, nextOffset, done, created, updated, skipped });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
 }
