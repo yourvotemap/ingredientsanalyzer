@@ -99,6 +99,10 @@ model Ingredient {
   hairGrowth       Int @default(0) // 育毛
   antibacterial    Int @default(0) // 抗菌
 
+  // 使用頻度・分類（データ品質向上用）
+  usageCount      Int     @default(0)  // 製品での使用頻度（化粧品）
+  baseIngredient  String? // 大本の素材分類（健康食品）例: りんご、乳酸菌
+
   // メタデータ
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +112,8 @@ model Ingredient {
   @@index([name])
   @@index([inci])
   @@index([domain])
+  @@index([baseIngredient])
+  @@index([usageCount])
 }
 
 // ============================================================
