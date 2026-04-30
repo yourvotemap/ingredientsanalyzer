@@ -9,9 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const CSV_URL =
-  "https://raw.githubusercontent.com/yourvotemap/ingredientsanalyzer/main/beauty_health_project/%E6%A9%9F%E8%83%BD%E6%80%A7%E8%A1%A8%E7%A4%BA%E9%A3%9F%E5%93%81_%E6%A4%9C%E7%B4%A2%E7%B5%90%E6%9E%9C%E4%B8%80%E8%A6%A7.csv";
+import fs from "fs";
+import path from "path";
 
 const BASE_INGREDIENT_MAP: [RegExp, string][] = [
   [/りんご|林檎|アップル|プロシアニジン/i, "りんご"],
@@ -113,12 +112,13 @@ function parseCsvLine(line: string): string[] {
 }
 
 // CSV を集計してユニーク成分エントリの配列を返す
-async function buildIngredientEntries(): Promise<
-  Array<{ name: string; funcText: string; count: number }>
-> {
-  const res = await fetch(CSV_URL, { next: { revalidate: 3600 } } as RequestInit);
-  if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
-  const text = await res.text();
+function buildIngredientEntries(): Array<{ name: string; funcText: string; count: number }> {
+  const filePath = path.join(
+    process.cwd(),
+    "beauty_health_project",
+    "機能性表示食品_検索結果一覧.csv"
+  );
+  const text = fs.readFileSync(filePath, "utf-8");
   const lines = text.replace(/^﻿/, "").split("\n").filter(Boolean);
   const headers = parseCsvLine(lines[0]).map((h) => h.replace(/"/g, "").trim());
 
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
   const batchSize: number = Number(body.batchSize ?? 500);
 
   try {
-    const entries = await buildIngredientEntries();
+    const entries = buildIngredientEntries();
     const total = entries.length;
     const batch = entries.slice(offset, offset + batchSize);
 

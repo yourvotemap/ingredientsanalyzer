@@ -9,9 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const CSV_URL =
-  "https://raw.githubusercontent.com/yourvotemap/ingredientsanalyzer/main/beauty_health_project/cosmetic_ingredients.csv";
+import fs from "fs";
+import path from "path";
 
 const PURPOSE_SCORE_MAP: Array<{ patterns: RegExp[]; fields: Record<string, number> }> = [
   { patterns: [/保湿|湿潤|moistur|humectant/i], fields: { moisture: 20 } },
@@ -91,20 +90,14 @@ function parseCsvLine(line: string): string[] {
   return result;
 }
 
-// CSV をフェッチしてデータ行（ヘッダー除く）を返すユーティリティ
-let cachedLines: string[] | null = null;
-let cachedAt = 0;
-
-async function fetchDataLines(): Promise<string[]> {
-  // 同一リクエスト内でのキャッシュは不要だが、将来の拡張のために残す
-  if (cachedLines && Date.now() - cachedAt < 60_000) return cachedLines;
-  const res = await fetch(CSV_URL, { next: { revalidate: 3600 } } as RequestInit);
-  if (!res.ok) throw new Error(`CSV取得失敗: ${res.status}`);
-  const text = await res.text();
-  const lines = text.replace(/^﻿/, "").split("\n").filter(Boolean);
-  cachedLines = lines;
-  cachedAt = Date.now();
-  return lines;
+function readDataLines(): string[] {
+  const filePath = path.join(
+    process.cwd(),
+    "beauty_health_project",
+    "cosmetic_ingredients.csv"
+  );
+  const text = fs.readFileSync(filePath, "utf-8").replace(/^﻿/, "");
+  return text.split("\n").filter(Boolean);
 }
 
 export const maxDuration = 60;
@@ -120,7 +113,7 @@ export async function POST(request: NextRequest) {
   const batchSize: number = Number(body.batchSize ?? 500);
 
   try {
-    const lines = await fetchDataLines();
+    const lines = readDataLines();
     const headers = parseCsvLine(lines[0]);
     const dataLines = lines.slice(1);
     const total = dataLines.length;
