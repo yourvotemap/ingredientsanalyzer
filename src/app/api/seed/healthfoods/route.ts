@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const offset: number = Number(body.offset ?? 0);
-  const batchSize: number = Number(body.batchSize ?? 500);
+  const batchSize: number = Number(body.batchSize ?? 200);
 
   try {
     const entries = readEntries();
@@ -75,12 +75,9 @@ export async function POST(request: NextRequest) {
       await prisma.ingredient.createMany({ data: toCreate as never[], skipDuplicates: true });
     }
 
-    if (toUpdate.length > 0) {
-      await Promise.all(
-        toUpdate.map(({ id, data }) =>
-          prisma.ingredient.update({ where: { id }, data: data as never })
-        )
-      );
+    // 更新: 直列実行（接続プール枯渇防止）
+    for (const { id, data } of toUpdate) {
+      await prisma.ingredient.update({ where: { id }, data: data as never });
     }
 
     const nextOffset = offset + batchSize;

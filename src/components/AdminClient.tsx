@@ -21,7 +21,10 @@ type SeedProgress = {
   updated: number;
 };
 
-const BATCH_SIZE = 500;
+const BATCH_SIZE: Record<"cosmetics" | "healthfoods", number> = {
+  cosmetics: 100,
+  healthfoods: 200,
+};
 
 export default function AdminClient({
   importLogs,
@@ -108,7 +111,7 @@ export default function AdminClient({
         const res = await fetch(`/api/seed/${type}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ offset, batchSize: BATCH_SIZE }),
+          body: JSON.stringify({ offset, batchSize: BATCH_SIZE[type] }),
         });
 
         if (!res.ok) {

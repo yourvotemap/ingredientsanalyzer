@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const offset: number = Number(body.offset ?? 0);
-  const batchSize: number = Number(body.batchSize ?? 200);
+  const batchSize: number = Number(body.batchSize ?? 100);
 
   try {
     const lines = readAllLines();            // ~100ms
@@ -181,16 +181,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 新規: createMany で1回のround trip
+    // 新規: createMany で1接続
     if (toCreate.length > 0) {
       await prisma.ingredient.createMany({ data: toCreate as never[], skipDuplicates: true });
     }
 
-    // 更新: Promise.all で並列実行
-    if (toUpdate.length > 0) {
-      await Promise.all(
-        toUpdate.map(({ id, data }) => prisma.ingredient.update({ where: { id }, data: data as never }))
-      );
+    // 更新: 直列実行（接続プール枯渇防止）
+    for (const { id, data } of toUpdate) {
+      await prisma.ingredient.update({ where: { id }, data: data as never });
     }
 
     const nextOffset = offset + batchSize;
