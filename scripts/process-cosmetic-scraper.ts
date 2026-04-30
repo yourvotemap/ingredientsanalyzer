@@ -1,17 +1,18 @@
 /**
  * 化粧品スクレイパーデータ処理スクリプト
  *
- * 入力: data/cosmetic-scraper/cosmetic_ingredients/ 以下のCSV/JSONファイル
- *   - 各ファイルは製品1件分、または全製品まとめのCSV
+ * 入力: data/cosmetic-scraper/cosmetic_ingredients/ 以下のCSVファイル
  *
- * 期待するCSV列（どちらの形式でも可）:
- *   形式A: ingredient_name, product_count  （成分ごとの集計済みデータ）
- *   形式B: product_name, brand, ingredients （製品ごとのデータ、ingredientsは「,」区切り）
+ * CSVカラム:
+ *   id, name_jp, name_inci, component_number, definition, name_cn,
+ *   purpose, regulation, cas_rn, organic_value, inorganic_value,
+ *   notes, related_materials, commercial_products, external_links
  *
  * 処理内容:
- *   1. 成分ごとに何製品で使われているかカウント → usageCount
- *   2. 既存のIngredientレコードを usageCount で更新
- *   3. DBにない成分は domain=cosmetics で新規登録
+ *   1. commercial_products → usageCount（数値なら直接、リストなら件数カウント）
+ *   2. purpose（用途）→ タグ + 機能スコアに変換
+ *   3. 既存のIngredientを name_jp / name_inci / aliases で照合して更新
+ *   4. 未登録成分は domain=cosmetics で新規登録
  */
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
@@ -26,127 +27,149 @@ const prisma = new PrismaClient();
 const DATA_DIR = path.join(__dirname, "../data/cosmetic-scraper/cosmetic_ingredients");
 
 // -------------------------------------------------------------------
-// CSV/JSON ローダー
+// purpose（用途）→ スコアフィールドへのマッピング
 // -------------------------------------------------------------------
-function loadFiles(): string[] {
-  if (!fs.existsSync(DATA_DIR)) {
-    throw new Error(`データディレクトリが見つかりません: ${DATA_DIR}\ndata/cosmetic-scraper/cosmetic_ingredients/ にCSVまたはJSONを配置してください。`);
-  }
-  return fs
-    .readdirSync(DATA_DIR)
-    .filter((f) => f.endsWith(".csv") || f.endsWith(".json"))
-    .map((f) => path.join(DATA_DIR, f));
-}
+const PURPOSE_SCORE_MAP: Array<{ patterns: RegExp[]; fields: Record<string, number> }> = [
+  {
+    patterns: [/保湿|湿潤|moistur|humectant/i],
+    fields: { moisture: 20 },
+  },
+  {
+    patterns: [/バリア|皮膜|エモリエント|emollient|barrier/i],
+    fields: { barrier: 20 },
+  },
+  {
+    patterns: [/美白|透明感|ブライトニング|brightening|whitening/i],
+    fields: { brightening: 20, antiSpots: 15 },
+  },
+  {
+    patterns: [/ハリ|リフト|firmness|lifting/i],
+    fields: { firmness: 20 },
+  },
+  {
+    patterns: [/鎮静|抗炎症|soothing|anti.?inflam/i],
+    fields: { soothing: 20, antiInflammation: 20 },
+  },
+  {
+    patterns: [/抗シワ|しわ|wrinkle|anti.?aging/i],
+    fields: { antiWrinkle: 20, antiAging: 15 },
+  },
+  {
+    patterns: [/抗ニキビ|ニキビ|acne|blemish/i],
+    fields: { antiAcne: 20 },
+  },
+  {
+    patterns: [/収れん|astringent|pore/i],
+    fields: { astringent: 20 },
+  },
+  {
+    patterns: [/ターンオーバー|turnover|exfoliat/i],
+    fields: { turnover: 20 },
+  },
+  {
+    patterns: [/シミ|くすみ|depigment|spot/i],
+    fields: { antiSpots: 20 },
+  },
+  {
+    patterns: [/抗酸化|酸化防止|antioxidant/i],
+    fields: { antioxidant: 20 },
+  },
+  {
+    patterns: [/消臭|deodorant/i],
+    fields: { deodorant: 20 },
+  },
+  {
+    patterns: [/育毛|発毛|hair.?growth/i],
+    fields: { hairGrowth: 20 },
+  },
+  {
+    patterns: [/抗菌|殺菌|antibacterial|antimicrobial/i],
+    fields: { antibacterial: 20 },
+  },
+  {
+    patterns: [/肌刺激|刺激性|irritat/i],
+    fields: { skinIrritation: 20 },
+  },
+];
 
-// -------------------------------------------------------------------
-// 形式A: 成分名, 使用製品数 の集計済みCSV
-// -------------------------------------------------------------------
-function parseAggregatedCsv(content: string): Map<string, number> {
-  const counts = new Map<string, number>();
-  const rows = parse(content, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
-  for (const row of rows) {
-    // 列名の揺れに対応
-    const name =
-      row["ingredient_name"] ||
-      row["成分名"] ||
-      row["name"] ||
-      row["inci"] ||
-      "";
-    const count = parseInt(
-      row["product_count"] || row["使用製品数"] || row["count"] || "1",
-      10
-    );
-    if (name.trim()) {
-      counts.set(name.trim(), (counts.get(name.trim()) || 0) + count);
+function inferScoresFromPurpose(purpose: string): Record<string, number> {
+  const scores: Record<string, number> = {};
+  for (const { patterns, fields } of PURPOSE_SCORE_MAP) {
+    if (patterns.some((p) => p.test(purpose))) {
+      for (const [field, val] of Object.entries(fields)) {
+        scores[field] = Math.max(scores[field] || 0, val);
+      }
     }
   }
-  return counts;
+  return scores;
 }
 
-// -------------------------------------------------------------------
-// 形式B: 製品ごとのCSV（ingredients列が「,」区切りの成分リスト）
-// -------------------------------------------------------------------
-function parseProductCsv(content: string): Map<string, number> {
-  const counts = new Map<string, number>();
-  const rows = parse(content, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
-  for (const row of rows) {
-    const ingredientsRaw =
-      row["ingredients"] || row["全成分"] || row["成分"] || "";
-    if (!ingredientsRaw) continue;
-    const ingredients = ingredientsRaw
-      .split(/[,、，\n]/)
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-    for (const ing of ingredients) {
-      counts.set(ing, (counts.get(ing) || 0) + 1);
-    }
+function purposeToTags(purpose: string): string {
+  const tags: string[] = [];
+  const tagMap: [RegExp, string][] = [
+    [/保湿|湿潤|moistur|humectant/i, "保湿"],
+    [/バリア|皮膜|エモリエント|emollient/i, "バリア"],
+    [/美白|透明感|brightening|whitening/i, "透明感"],
+    [/ハリ|リフト|firmness/i, "ハリ"],
+    [/鎮静|抗炎症|soothing|anti.?inflam/i, "鎮静"],
+    [/抗シワ|しわ|wrinkle/i, "抗シワ"],
+    [/抗ニキビ|acne/i, "抗ニキビ"],
+    [/収れん|astringent/i, "収れん"],
+    [/ターンオーバー|turnover/i, "ターンオーバー"],
+    [/シミ|くすみ|spot/i, "抗シミ"],
+    [/抗酸化|antioxidant/i, "抗酸化"],
+    [/消臭|deodorant/i, "消臭"],
+    [/育毛|hair.?growth/i, "育毛"],
+    [/抗菌|antibacterial/i, "抗菌"],
+  ];
+  for (const [pattern, tag] of tagMap) {
+    if (pattern.test(purpose)) tags.push(tag);
   }
-  return counts;
+  return tags.join("、");
 }
 
 // -------------------------------------------------------------------
-// JSON形式対応（オブジェクト配列を想定）
+// commercial_products → usageCount
+// 数値ならそのまま、セミコロン/改行区切りのリストならカウント
 // -------------------------------------------------------------------
-function parseJson(content: string): Map<string, number> {
-  const counts = new Map<string, number>();
-  const data = JSON.parse(content);
-  const rows: Record<string, unknown>[] = Array.isArray(data) ? data : [data];
-  for (const row of rows) {
-    // 集計済み形式
-    if (row["ingredient_name"] || row["成分名"] || row["name"]) {
-      const name = String(row["ingredient_name"] || row["成分名"] || row["name"] || "").trim();
-      const count = parseInt(String(row["product_count"] || row["count"] || "1"), 10);
-      if (name) counts.set(name, (counts.get(name) || 0) + count);
-    }
-    // 製品形式
-    else if (row["ingredients"] || row["全成分"]) {
-      const raw = String(row["ingredients"] || row["全成分"] || "");
-      raw.split(/[,、，\n]/).map((s) => s.trim()).filter(Boolean).forEach((ing) => {
-        counts.set(ing, (counts.get(ing) || 0) + 1);
-      });
-    }
-  }
-  return counts;
+function parseUsageCount(raw: string | undefined): number {
+  if (!raw) return 0;
+  const trimmed = raw.trim();
+  if (!trimmed) return 0;
+
+  // 純粋な数値
+  const asNum = parseInt(trimmed, 10);
+  if (!isNaN(asNum) && String(asNum) === trimmed) return asNum;
+
+  // セミコロン・改行・パイプ区切りのリスト
+  const items = trimmed.split(/[;\n|]/).map((s) => s.trim()).filter(Boolean);
+  if (items.length > 1) return items.length;
+
+  // カンマ区切り（製品名リスト）
+  const commaItems = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+  if (commaItems.length > 1) return commaItems.length;
+
+  return 1;
 }
 
 // -------------------------------------------------------------------
-// ファイル形式を自動判定してパース
+// メイン処理
 // -------------------------------------------------------------------
-function parseFile(filePath: string): Map<string, number> {
-  const content = fs.readFileSync(filePath, "utf-8");
-  if (filePath.endsWith(".json")) return parseJson(content);
-
-  // CSVの場合: 1行目のヘッダーで形式を判定
-  const firstLine = content.split("\n")[0].toLowerCase();
-  if (
-    firstLine.includes("ingredient_name") ||
-    firstLine.includes("成分名") ||
-    firstLine.includes("product_count")
-  ) {
-    return parseAggregatedCsv(content);
-  }
-  return parseProductCsv(content);
+interface CosmeticRow {
+  name_jp: string;
+  name_inci: string;
+  name_cn: string;
+  definition: string;
+  purpose: string;
+  cas_rn: string;
+  notes: string;
+  commercial_products: string;
 }
 
-// -------------------------------------------------------------------
-// 名前の正規化（INCI名・表記ゆれ対応）
-// -------------------------------------------------------------------
-function normalizeName(name: string): string {
-  return name
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/（/g, "(")
-    .replace(/）/g, ")")
-    .replace(/　/g, " ");
-}
+async function processCosmeticIngredients(rows: CosmeticRow[]) {
+  console.log(`\n成分行数: ${rows.length}`);
 
-// -------------------------------------------------------------------
-// DB更新
-// -------------------------------------------------------------------
-async function updateUsageCounts(counts: Map<string, number>) {
-  console.log(`\n成分ユニーク数: ${counts.size}`);
-
-  // 既存成分を全取得（name + inci + aliases で照合）
+  // 既存成分を全取得
   const existing = await prisma.ingredient.findMany({
     where: { domain: { in: ["cosmetics", "both", "quasidrug"] } },
     select: { id: true, name: true, inci: true, aliases: true },
@@ -156,70 +179,102 @@ async function updateUsageCounts(counts: Map<string, number>) {
   let created = 0;
   let skipped = 0;
 
-  for (const [rawName, count] of counts) {
-    const name = normalizeName(rawName);
-    if (!name) { skipped++; continue; }
+  const BATCH = 20;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const batch = rows.slice(i, i + BATCH);
+    const ops = [];
 
-    // name / inci / aliases で検索
-    const match = existing.find((e) => {
-      if (e.name === name || e.inci === name) return true;
-      if (e.aliases) {
-        return e.aliases.split(/[、,]/).map((a) => a.trim()).includes(name);
+    for (const row of batch) {
+      const name = (row.name_jp || "").trim();
+      const inci = (row.name_inci || "").trim();
+      if (!name && !inci) { skipped++; continue; }
+
+      const usageCount = parseUsageCount(row.commercial_products);
+      const scores = inferScoresFromPurpose(row.purpose || "");
+      const tags = purposeToTags(row.purpose || "");
+
+      const data = {
+        domain: "cosmetics",
+        name: name || inci,
+        inci: inci || null,
+        nameZh: row.name_cn?.trim() || null,
+        detail: row.definition?.trim() || null,
+        notes: row.notes?.trim() || null,
+        tags: tags || null,
+        usageCount,
+        ...scores,
+      };
+
+      const match = existing.find((e) => {
+        if (name && (e.name === name)) return true;
+        if (inci && (e.inci === inci || e.name === inci)) return true;
+        if (e.aliases) {
+          const aliasList = e.aliases.split(/[、,]/).map((a) => a.trim());
+          if (name && aliasList.includes(name)) return true;
+          if (inci && aliasList.includes(inci)) return true;
+        }
+        return false;
+      });
+
+      if (match) {
+        ops.push(
+          prisma.ingredient.update({ where: { id: match.id }, data })
+        );
+        updated++;
+      } else {
+        ops.push(prisma.ingredient.create({ data }));
+        created++;
       }
-      return false;
-    });
+    }
 
-    if (match) {
-      await prisma.ingredient.update({
-        where: { id: match.id },
-        data: { usageCount: count },
-      });
-      updated++;
-    } else {
-      // DBにない成分は最小情報で新規登録（スコアは0のまま、後でExcelで補完）
-      await prisma.ingredient.create({
-        data: {
-          domain: "cosmetics",
-          name,
-          usageCount: count,
-        },
-      });
-      created++;
+    if (ops.length > 0) {
+      await prisma.$transaction(ops);
+    }
+
+    if ((i / BATCH) % 10 === 0) {
+      process.stdout.write(`\r  処理済み: ${Math.min(i + BATCH, rows.length)} / ${rows.length}`);
     }
   }
 
-  console.log(`更新: ${updated}件 / 新規登録: ${created}件 / スキップ: ${skipped}件`);
+  console.log(`\n更新: ${updated}件 / 新規登録: ${created}件 / スキップ: ${skipped}件`);
 }
 
-// -------------------------------------------------------------------
-// メイン
-// -------------------------------------------------------------------
 async function main() {
-  console.log("=== 化粧品スクレイパーデータ処理 ===");
+  console.log("=== 化粧品成分データ処理 ===");
   console.log(`データディレクトリ: ${DATA_DIR}`);
 
-  const files = loadFiles();
+  if (!fs.existsSync(DATA_DIR)) {
+    throw new Error(`データディレクトリが見つかりません: ${DATA_DIR}`);
+  }
+
+  const files = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.endsWith(".csv"))
+    .map((f) => path.join(DATA_DIR, f));
+
   if (files.length === 0) {
-    console.log(
-      "CSVまたはJSONファイルが見つかりません。\n" +
-      "data/cosmetic-scraper/cosmetic_ingredients/ にファイルを配置してください。"
-    );
-    return;
+    throw new Error("CSVファイルが見つかりません。");
   }
   console.log(`ファイル数: ${files.length}`);
 
-  // 全ファイルをマージ
-  const totalCounts = new Map<string, number>();
+  const allRows: CosmeticRow[] = [];
   for (const file of files) {
-    console.log(`  処理中: ${path.basename(file)}`);
-    const counts = parseFile(file);
-    for (const [name, count] of counts) {
-      totalCounts.set(name, (totalCounts.get(name) || 0) + count);
-    }
+    console.log(`  読み込み: ${path.basename(file)}`);
+    // BOM除去 + タブ区切り/カンマ区切り両対応
+    const raw = fs.readFileSync(file, "utf-8").replace(/^﻿/, "");
+    const delimiter = raw.split("\n")[0].includes("\t") ? "\t" : ",";
+    const rows = parse(raw, {
+      columns: true,
+      skip_empty_lines: true,
+      delimiter,
+      relax_column_count: true,
+    }) as CosmeticRow[];
+    allRows.push(...rows);
   }
 
-  await updateUsageCounts(totalCounts);
-  console.log("\n=== 完了 ===");
+  console.log(`総行数: ${allRows.length}`);
+  await processCosmeticIngredients(allRows);
+  console.log("=== 完了 ===");
 }
 
 main()

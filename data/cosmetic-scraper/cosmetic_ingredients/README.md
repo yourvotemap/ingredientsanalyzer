@@ -1,42 +1,35 @@
 # 化粧品成分データの配置場所
 
-このディレクトリに以下いずれかの形式でCSV/JSONを配置してください。
+このディレクトリにスクレイパーで取得したCSVを配置してください。
 
-## 形式A: 成分ごとの集計済みCSV（推奨）
+## カラム構成（cosmeinfo等）
 
-スクレイパーが「成分ごとに何製品で使われているか」を集計した場合。
-
-```csv
-ingredient_name,product_count
-グリセリン,8523
-水,7841
-エタノール,6412
-BG,5931
-ヒアルロン酸Na,4201
+```
+id, name_jp, name_inci, component_number, definition, name_cn,
+purpose, regulation, cas_rn, organic_value, inorganic_value,
+notes, related_materials, commercial_products, external_links
 ```
 
-## 形式B: 製品ごとのCSV
+| カラム | 用途 | DBフィールド |
+|--------|------|-------------|
+| `name_jp` | 日本語成分名 | `name` |
+| `name_inci` | INCI名 | `inci` |
+| `name_cn` | 中国語名 | `nameZh` |
+| `definition` | 成分説明 | `detail` |
+| `purpose` | 用途（保湿、美白 等） | `tags` + スコア自動付与 |
+| `commercial_products` | 使用製品数 or 製品リスト | `usageCount` |
 
-スクレイパーが製品単位でデータを取得した場合。
-`ingredients` 列に「,」区切りで全成分を入れてください。
+## commercial_products の形式について
 
-```csv
-product_name,brand,ingredients
-モイスチャーローション,〇〇化粧品,"水,グリセリン,BG,ヒアルロン酸Na,カルボマー"
-美容液,△△コスメ,"水,BG,ナイアシンアミド,セラミドNP,カルボマー"
-```
-
-## 形式C: JSON
-
-```json
-[
-  { "ingredient_name": "グリセリン", "product_count": 8523 },
-  { "ingredient_name": "水", "product_count": 7841 }
-]
-```
+スクリプトは以下の形式を自動判別します：
+- 数値のみ: `9999` → usageCount = 9999
+- セミコロン区切りの製品名リスト: `製品A;製品B;製品C` → usageCount = 3
+- パイプ区切り: `製品A|製品B` → usageCount = 2
 
 ## 処理コマンド
 
 ```sh
-npx tsx scripts/process-cosmetic-scraper.ts
+npm run data:cosmetics
 ```
+
+タブ区切り（TSV）も自動対応しています。
