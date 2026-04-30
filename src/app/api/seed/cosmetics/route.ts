@@ -121,8 +121,10 @@ export async function POST(request: NextRequest) {
           where: { domain: { in: ["cosmetics", "both", "quasidrug"] } },
           select: { id: true, name: true, inci: true },
         });
-        const byName = new Map(existing.map((e) => [e.name, e.id]));
-        const byInci = new Map(existing.map((e) => [e.inci ?? "", e.id]).filter(([k]) => k));
+        const byName = new Map<string, string>(existing.map((e) => [e.name, e.id]));
+        const byInci = new Map<string, string>(
+          existing.filter((e) => e.inci).map((e) => [e.inci as string, e.id])
+        );
 
         let created = 0, updated = 0, skipped = 0;
         const BATCH = 50;
