@@ -130,24 +130,25 @@ function purposeToTags(purpose: string): string {
 
 // -------------------------------------------------------------------
 // commercial_products → usageCount
-// 数値ならそのまま、セミコロン/改行区切りのリストならカウント
+// 「123件」形式、純粋な数値、リスト形式に対応
 // -------------------------------------------------------------------
 function parseUsageCount(raw: string | undefined): number {
   if (!raw) return 0;
   const trimmed = raw.trim();
   if (!trimmed) return 0;
 
-  // 純粋な数値
-  const asNum = parseInt(trimmed, 10);
-  if (!isNaN(asNum) && String(asNum) === trimmed) return asNum;
+  // 「123件」「123 件」形式
+  const kenMatch = trimmed.match(/^(\d[\d,]*)[\s　]*件/);
+  if (kenMatch) return parseInt(kenMatch[1].replace(/,/g, ""), 10);
+
+  // 純粋な数値（カンマ区切り数値表記も対応: 1,234）
+  const numOnly = trimmed.replace(/,/g, "");
+  const asNum = parseInt(numOnly, 10);
+  if (!isNaN(asNum) && /^\d[\d,]*$/.test(trimmed)) return asNum;
 
   // セミコロン・改行・パイプ区切りのリスト
   const items = trimmed.split(/[;\n|]/).map((s) => s.trim()).filter(Boolean);
   if (items.length > 1) return items.length;
-
-  // カンマ区切り（製品名リスト）
-  const commaItems = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
-  if (commaItems.length > 1) return commaItems.length;
 
   return 1;
 }
@@ -197,6 +198,9 @@ async function processCosmeticIngredients(rows: CosmeticRow[]) {
         domain: "cosmetics",
         name: name || inci,
         inci: inci || null,
+        // INCI名は英語の国際標準名なので英語表示・英語一般名として兼用
+        nameEn: inci || null,
+        english: inci || null,
         nameZh: row.name_cn?.trim() || null,
         detail: row.definition?.trim() || null,
         notes: row.notes?.trim() || null,
