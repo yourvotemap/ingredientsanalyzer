@@ -43,3 +43,7 @@ next-env.d.ts
 
 /src/generated/prisma
 *.db
+
+# ローカル作業用データコピー（beauty_health_projectが正本）
+/data/**/*.csv
+/data/**/*.json
