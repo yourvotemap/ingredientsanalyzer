@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
+  { href: "/search", label: "💄 化粧品成分検索", dataPage: "search-cosmetics" },
+  { href: "/search?mode=health", label: "🌿 健康食品検索", dataPage: "search-health" },
   { href: "/builder", label: "理想設計", dataPage: "builder" },
   { href: "/catalog", label: "おすすめ製品", dataPage: "catalog" },
-  { href: "/ingredients", label: "成分一覧", dataPage: "ingredients" },
+  { href: "/ingredients", label: "成分一覧(DB)", dataPage: "ingredients" },
   { href: "/ranking", label: "ランキング", dataPage: "ranking" },
   { href: "/mongolia", label: "モンゴル産特集", dataPage: "mongolia" },
 ];
@@ -48,6 +50,10 @@ export default function Navigation({ userName }: { userName?: string }) {
             const isActive =
               tab.href === "/"
                 ? pathname === "/"
+                : tab.href === "/search"
+                ? pathname === "/search"
+                : tab.href === "/search?mode=health"
+                ? false
                 : pathname.startsWith(tab.href);
             return (
               <Link
